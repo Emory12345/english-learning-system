@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "words")
+@Table(name = "word")
 public class Word {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -15,11 +15,15 @@ public class Word {
 
     private String meaning;
 
+    private String chineseMeaning;
+
     private String phonetic;
 
     private String example;
 
-    private String level; // 难度级别
+    private String level;
 
-    private String category; // 单词类别
+    private String category;
+
+    private Integer ageGroup;
 }

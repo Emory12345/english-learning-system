@@ -1,5 +1,6 @@
 package com.englishlearning.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -30,4 +31,6 @@ public class Post {
     private int commentCount = 0;
 
     private int collectCount = 0;
+
+    private boolean isTop = false;
 }
