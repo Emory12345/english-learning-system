@@ -120,4 +120,43 @@ public class HomeworkController {
     public List<HomeworkSubmission> getSubmissions(@PathVariable Long homeworkId) {
         return homeworkSubmissionRepository.findByHomeworkId(homeworkId);
     }
+
+    @GetMapping("/teacher")
+    public List<Homework> getTeacherHomework() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User teacher = userDetailsService.findUserByEmail(email);
+        return homeworkRepository.findByTeacherId(teacher.getId());
+    }
+
+    @PutMapping("/edit/{id}")
+    public Homework editHomework(@PathVariable Long id, @RequestBody Map<String, Object> homeworkData) {
+        Homework homework = homeworkRepository.findById(id).orElseThrow(() -> new RuntimeException("Homework not found"));
+        
+        if (homeworkData.containsKey("title")) {
+            homework.setTitle(homeworkData.get("title").toString());
+        }
+        if (homeworkData.containsKey("content")) {
+            homework.setContent(homeworkData.get("content").toString());
+        }
+        if (homeworkData.containsKey("category")) {
+            homework.setCategory(homeworkData.get("category").toString());
+        }
+        if (homeworkData.containsKey("type")) {
+            homework.setType(homeworkData.get("type").toString());
+        }
+        if (homeworkData.containsKey("image")) {
+            homework.setImage(homeworkData.get("image") != null ? homeworkData.get("image").toString() : null);
+        }
+        
+        return homeworkRepository.save(homework);
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public Map<String, String> deleteHomework(@PathVariable Long id) {
+        homeworkRepository.deleteById(id);
+        Map<String, String> response = new java.util.HashMap<>();
+        response.put("message", "Homework deleted successfully");
+        return response;
+    }
 }

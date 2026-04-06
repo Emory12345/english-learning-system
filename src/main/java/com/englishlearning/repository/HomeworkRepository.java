@@ -9,4 +9,5 @@ public interface HomeworkRepository extends JpaRepository<Homework, Long> {
     List<Homework> findByCourseId(Long courseId);
     List<Homework> findByCategory(String category);
     List<Homework> findByCategoryAndType(String category, String type);
+    List<Homework> findByTeacherId(Long teacherId);
 }
