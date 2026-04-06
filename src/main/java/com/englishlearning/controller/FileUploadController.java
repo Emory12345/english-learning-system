@@ -1,7 +1,9 @@
 package com.englishlearning.controller;
 
 import com.englishlearning.entity.User;
+import com.englishlearning.entity.Video;
 import com.englishlearning.repository.UserRepository;
+import com.englishlearning.repository.VideoRepository;
 import com.englishlearning.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +26,9 @@ public class FileUploadController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private VideoRepository videoRepository;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -72,6 +77,73 @@ public class FileUploadController {
             response.put("success", true);
             response.put("avatarUrl", avatarUrl);
             response.put("message", "头像上传成功");
+            return ResponseEntity.ok(response);
+
+        } catch (IOException e) {
+            response.put("success", false);
+            response.put("message", "文件上传失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    @PostMapping("/upload/video")
+    public ResponseEntity<Map<String, Object>> uploadVideo(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("title") String title,
+            @RequestParam("description") String description,
+            @RequestParam("category") String category,
+            @RequestParam("type") String type) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String token = authHeader.substring(7);
+            String email = jwtUtil.getEmailFromToken(token);
+            User user = userRepository.findByEmail(email).orElse(null);
+
+            if (user == null) {
+                response.put("success", false);
+                response.put("message", "用户不存在");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            if (file.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "文件不能为空");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            String originalFilename = file.getOriginalFilename();
+            String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : ".mp4";
+            String newFilename = UUID.randomUUID().toString() + extension;
+
+            Path uploadPath = Paths.get(uploadDir);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            Path filePath = uploadPath.resolve(newFilename);
+            Files.copy(file.getInputStream(), filePath);
+
+            String videoUrl = "/uploads/" + newFilename;
+
+            // Save video information to database
+            Video video = new Video();
+            video.setTitle(title);
+            video.setDescription(description);
+            video.setVideoUrl(videoUrl);
+            video.setCategory(category);
+            video.setType(type);
+            video.setTeacherId(user.getId());
+            video.setCreatedAt(java.time.LocalDateTime.now());
+            videoRepository.save(video);
+
+            response.put("success", true);
+            response.put("videoUrl", videoUrl);
+            response.put("title", title);
+            response.put("description", description);
+            response.put("category", category);
+            response.put("type", type);
+            response.put("message", "视频上传成功");
             return ResponseEntity.ok(response);
 
         } catch (IOException e) {

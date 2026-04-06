@@ -1,0 +1,12 @@
+# Maven
+/target
+
+# Uploads
+/uploads
+
+# IDE
+/.idea
+
+# OS
+.DS_Store
+Thumbs.db

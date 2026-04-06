@@ -17,9 +17,21 @@ public class Homework {
 
     private String content;
 
+    private String category;
+
+    private String type;
+
+    private String image;
+
     @ManyToOne
     @JoinColumn(name = "course_id")
     private Course course;
+
+    @ManyToOne
+    @JoinColumn(name = "teacher_id")
+    private User teacher;
+
+    private LocalDateTime createdAt;
 
     private LocalDateTime deadline;
 

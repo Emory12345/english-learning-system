@@ -28,25 +28,78 @@ public class HomeworkController {
     @Autowired
     private CustomUserDetailsService userDetailsService;
 
-    @PostMapping("/submit")
-    public HomeworkSubmission submitHomework(@RequestBody Map<String, Object> submissionData) {
-        Long homeworkId = Long.valueOf(submissionData.get("homeworkId").toString());
-        String content = submissionData.get("content").toString();
+    @PostMapping("/publish")
+    public Homework publishHomework(@RequestBody Map<String, Object> homeworkData) {
+        String title = homeworkData.get("title").toString();
+        String content = homeworkData.get("content").toString();
+        String category = homeworkData.get("category").toString();
+        String type = homeworkData.get("type").toString();
+        String image = homeworkData.get("image") != null ? homeworkData.get("image").toString() : null;
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
-        User student = userDetailsService.findUserByEmail(email);
+        User teacher = userDetailsService.findUserByEmail(email);
 
-        Homework homework = homeworkRepository.findById(homeworkId).orElseThrow(() -> new RuntimeException("Homework not found"));
+        Homework homework = new Homework();
+        homework.setTitle(title);
+        homework.setContent(content);
+        homework.setCategory(category);
+        homework.setType(type);
+        homework.setImage(image);
+        homework.setTeacher(teacher);
+        homework.setCreatedAt(LocalDateTime.now());
 
-        HomeworkSubmission submission = new HomeworkSubmission();
-        submission.setHomework(homework);
-        submission.setStudent(student);
-        submission.setContent(content);
-        submission.setSubmissionDate(LocalDateTime.now());
-        submission.setStatus("submitted");
+        return homeworkRepository.save(homework);
+    }
 
-        return homeworkSubmissionRepository.save(submission);
+    @GetMapping("/")
+    public List<Homework> getAllHomework() {
+        return homeworkRepository.findAll();
+    }
+
+    @GetMapping("/category/{category}")
+    public List<Homework> getHomeworkByCategory(@PathVariable String category) {
+        System.out.println("Getting homework by category: " + category);
+        List<Homework> homeworks = homeworkRepository.findByCategory(category);
+        System.out.println("Found " + homeworks.size() + " homeworks");
+        return homeworks;
+    }
+
+    @GetMapping("/category/{category}/type/{type}")
+    public List<Homework> getHomeworkByCategoryAndType(@PathVariable String category, @PathVariable String type) {
+        return homeworkRepository.findByCategoryAndType(category, type);
+    }
+
+    @PostMapping("/submit")
+    public HomeworkSubmission submitHomework(@RequestBody Map<String, Object> submissionData) {
+        try {
+            System.out.println("Submitting homework: " + submissionData);
+            Long homeworkId = Long.valueOf(submissionData.get("homeworkId").toString());
+            String content = submissionData.get("content").toString();
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String email = authentication.getName();
+            System.out.println("Student email: " + email);
+            User student = userDetailsService.findUserByEmail(email);
+            System.out.println("Student: " + student);
+
+            Homework homework = homeworkRepository.findById(homeworkId).orElseThrow(() -> new RuntimeException("Homework not found"));
+            System.out.println("Homework: " + homework);
+
+            HomeworkSubmission submission = new HomeworkSubmission();
+            submission.setHomework(homework);
+            submission.setStudent(student);
+            submission.setContent(content);
+            submission.setSubmissionDate(LocalDateTime.now());
+            submission.setStatus("submitted");
+
+            System.out.println("Saving submission: " + submission);
+            return homeworkSubmissionRepository.save(submission);
+        } catch (Exception e) {
+            System.err.println("Error submitting homework: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @PostMapping("/grade")
