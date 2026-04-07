@@ -88,8 +88,8 @@ public class CommunityController {
 
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
 
-        // 检查权限：只有帖子作者或管理员可以删除
-        if (!post.getAuthor().getId().equals(currentUser.getId()) && !"admin".equals(currentUser.getRole())) {
+        // 检查权限：只有帖子作者、管理员或教师可以删除
+        if (!post.getAuthor().getId().equals(currentUser.getId()) && !"admin".equals(currentUser.getRole()) && !"teacher".equals(currentUser.getRole())) {
             throw new RuntimeException("No permission to delete this post");
         }
 
@@ -108,8 +108,8 @@ public class CommunityController {
                                               @PathVariable Long postId, @RequestBody Map<String, Boolean> data) {
         User currentUser = getCurrentUser(authorizationHeader);
 
-        // 检查是否为管理员
-        if (!"admin".equals(currentUser.getRole())) {
+        // 检查是否为管理员或教师
+        if (!"admin".equals(currentUser.getRole()) && !"teacher".equals(currentUser.getRole())) {
             throw new RuntimeException("No permission to top this post");
         }
 
