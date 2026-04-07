@@ -135,6 +135,7 @@ public class FileUploadController {
             video.setType(type);
             video.setTeacherId(user.getId());
             video.setCreatedAt(java.time.LocalDateTime.now());
+            video.setStatus("pending");
             videoRepository.save(video);
 
             response.put("success", true);

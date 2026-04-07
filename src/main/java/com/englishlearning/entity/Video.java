@@ -25,6 +25,8 @@ public class Video {
 
     private LocalDateTime createdAt;
 
+    private String status; // pending, approved, rejected
+
     // Getters and Setters
     public Long getId() {
         return id;
@@ -88,5 +90,13 @@ public class Video {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

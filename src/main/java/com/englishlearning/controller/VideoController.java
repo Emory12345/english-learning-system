@@ -34,19 +34,19 @@ public class VideoController {
 
     @GetMapping("/videos")
     public ResponseEntity<List<Video>> getVideos() {
-        List<Video> videos = videoRepository.findAll();
+        List<Video> videos = videoRepository.findByStatus("approved");
         return ResponseEntity.ok(videos);
     }
 
     @GetMapping("/videos/category/{category}")
     public ResponseEntity<List<Video>> getVideosByCategory(@PathVariable String category) {
-        List<Video> videos = videoRepository.findByCategory(category);
+        List<Video> videos = videoRepository.findByCategoryAndStatus(category, "approved");
         return ResponseEntity.ok(videos);
     }
 
     @GetMapping("/videos/category/{category}/type/{type}")
     public ResponseEntity<List<Video>> getVideosByCategoryAndType(@PathVariable String category, @PathVariable String type) {
-        List<Video> videos = videoRepository.findByCategoryAndType(category, type);
+        List<Video> videos = videoRepository.findByCategoryAndTypeAndStatus(category, type, "approved");
         return ResponseEntity.ok(videos);
     }
 
