@@ -49,6 +49,15 @@ public class AuthController {
 
             // 直接使用数据库中的密码进行登录，不进行任何加密
             if (password.equals(user.getPassword()) && user.getRole().equals(role)) {
+                // 检查用户状态，只有active状态的用户才能登录
+                if (!"active".equals(user.getStatus())) {
+                    if ("pending".equals(user.getStatus())) {
+                        throw new RuntimeException("您的账号正在审核中，请等待管理员批准");
+                    } else {
+                        throw new RuntimeException("您的账号已被禁用");
+                    }
+                }
+                
                 System.out.println("Generating token...");
                 String token = jwtUtil.generateToken(email, role);
                 System.out.println("Token generated: " + token);
@@ -92,13 +101,29 @@ public class AuthController {
         User user = new User();
         user.setName(name);
         user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(password));
+        user.setPassword(password); // 直接保存明文密码，不加密
         user.setRole(role);
+        
+        // 确保设置username字段，因为数据库表中username是NOT NULL
+        if ("teacher".equals(role)) {
+            user.setStatus("pending");
+            // 保存教师专用字段
+            user.setUsername(userData.get("username"));
+        } else {
+            user.setStatus("active");
+            // 为学生角色设置默认username（使用邮箱前缀）
+            String defaultUsername = email.split("@")[0];
+            user.setUsername(defaultUsername);
+        }
 
         userRepository.save(user);
 
         Map<String, String> response = new HashMap<>();
-        response.put("message", "User registered successfully");
+        if ("teacher".equals(role)) {
+            response.put("message", "教师注册成功，等待管理员审核");
+        } else {
+            response.put("message", "注册成功，请登录");
+        }
 
         return response;
     }
