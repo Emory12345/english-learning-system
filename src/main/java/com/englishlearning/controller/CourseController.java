@@ -113,4 +113,13 @@ public class CourseController {
 
         return courseEnrollmentRepository.findByStudentId(student.getId());
     }
+
+    @GetMapping("/teacher")
+    public List<Course> getTeacherCourses() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User teacher = userDetailsService.findUserByEmail(email);
+
+        return courseRepository.findByTeacherId(teacher.getId());
+    }
 }

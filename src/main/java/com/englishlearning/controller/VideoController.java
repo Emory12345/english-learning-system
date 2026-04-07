@@ -2,9 +2,13 @@ package com.englishlearning.controller;
 
 import com.englishlearning.entity.Video;
 import com.englishlearning.repository.VideoRepository;
+import com.englishlearning.service.CustomUserDetailsService;
+import com.englishlearning.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -21,6 +25,9 @@ public class VideoController {
 
     @Autowired
     private VideoRepository videoRepository;
+
+    @Autowired
+    private CustomUserDetailsService userDetailsService;
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -40,6 +47,15 @@ public class VideoController {
     @GetMapping("/videos/category/{category}/type/{type}")
     public ResponseEntity<List<Video>> getVideosByCategoryAndType(@PathVariable String category, @PathVariable String type) {
         List<Video> videos = videoRepository.findByCategoryAndType(category, type);
+        return ResponseEntity.ok(videos);
+    }
+
+    @GetMapping("/videos/teacher")
+    public ResponseEntity<List<Video>> getTeacherVideos() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User teacher = userDetailsService.findUserByEmail(email);
+        List<Video> videos = videoRepository.findByTeacherId(teacher.getId());
         return ResponseEntity.ok(videos);
     }
 

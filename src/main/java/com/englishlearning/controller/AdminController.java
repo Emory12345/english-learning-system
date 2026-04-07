@@ -20,18 +20,7 @@ public class AdminController {
     @Autowired
     private CourseRepository courseRepository;
 
-    @GetMapping("/users")
-    public List<User> getUserList() {
-        return userRepository.findAll();
-    }
 
-    @DeleteMapping("/users/{id}")
-    public Map<String, String> deleteUser(@PathVariable Long id) {
-        userRepository.deleteById(id);
-        Map<String, String> response = new java.util.HashMap<>();
-        response.put("message", "User deleted successfully");
-        return response;
-    }
 
     @GetMapping("/courses/pending")
     public List<Course> getPendingCourses() {

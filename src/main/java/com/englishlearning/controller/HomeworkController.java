@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/homework")
@@ -191,6 +192,22 @@ public class HomeworkController {
         String email = authentication.getName();
         User student = userDetailsService.findUserByEmail(email);
         return homeworkSubmissionRepository.findByStudentId(student.getId());
+    }
+
+    @GetMapping("/submissions/teacher")
+    public List<HomeworkSubmission> getTeacherSubmissions() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User teacher = userDetailsService.findUserByEmail(email);
+        // 获取教师的所有作业
+        List<Homework> teacherHomeworks = homeworkRepository.findByTeacherId(teacher.getId());
+        // 收集这些作业的所有提交
+        List<HomeworkSubmission> submissions = new ArrayList<>();
+        for (Homework homework : teacherHomeworks) {
+            List<HomeworkSubmission> homeworkSubmissions = homeworkSubmissionRepository.findByHomeworkId(homework.getId());
+            submissions.addAll(homeworkSubmissions);
+        }
+        return submissions;
     }
 
     @PutMapping("/edit/{id}")
