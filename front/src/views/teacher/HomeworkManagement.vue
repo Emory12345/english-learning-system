@@ -307,7 +307,9 @@ const removeImage = () => {
 // 自定义上传方法
 const customUpload = async (options: any) => {
   try {
+    console.log('Uploading audio file:', options.file)
     const response = await api.upload.audio(options.file)
+    console.log('Upload response:', response)
     if (response.success) {
       editForm.value.audio = response.audioUrl
       ElMessage.success('音频上传成功')

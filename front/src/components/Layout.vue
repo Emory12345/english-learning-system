@@ -113,6 +113,11 @@
                 <span>作业管理</span>
               </template>
             </el-menu-item>
+            <el-menu-item index="/teacher/community">
+              <template #title>
+                <span>学习社区</span>
+              </template>
+            </el-menu-item>
             <el-menu-item index="/teacher/profile">
               <template #title>
                 <span>个人中心</span>

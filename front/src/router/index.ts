@@ -146,6 +146,11 @@ const routes: RouteRecordRaw[] = [
         path: 'homework-management',
         name: 'HomeworkManagement',
         component: () => import('../views/teacher/HomeworkManagement.vue')
+      },
+      {
+        path: 'community',
+        name: 'TeacherCommunity',
+        component: () => import('../views/teacher/Community.vue')
       }
     ]
   },

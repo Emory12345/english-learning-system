@@ -40,59 +40,14 @@
       </div>
     </el-card>
 
-    <!-- 教学统计 -->
-    <el-card class="stats-card">
-      <template #header>
-        <div class="card-header">
-          <span>教学统计</span>
-        </div>
-      </template>
-      <div class="stats-container">
-        <div class="stat-card">
-          <div class="stat-icon">
-            <el-icon><VideoCamera /></el-icon>
-          </div>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.totalVideos }}</div>
-            <div class="stat-label">发布视频数</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">
-            <el-icon><Document /></el-icon>
-          </div>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.totalHomeworks }}</div>
-            <div class="stat-label">发布作业数</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">
-            <el-icon><Edit /></el-icon>
-          </div>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.pendingHomeworks }}</div>
-            <div class="stat-label">待批改作业</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">
-            <el-icon><User /></el-icon>
-          </div>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.totalStudents }}</div>
-            <div class="stat-label">学生人数</div>
-          </div>
-        </div>
-      </div>
-    </el-card>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { VideoCamera, Document, Edit, User } from '@element-plus/icons-vue'
+
 import { api } from '../../api'
 import { useUserStore } from '../../stores/user'
 
@@ -110,13 +65,7 @@ const userInfo = ref({
   avatar: ''
 })
 
-// 教学统计数据
-const stats = ref({
-  totalVideos: 0,
-  totalHomeworks: 0,
-  pendingHomeworks: 0,
-  totalStudents: 0
-})
+
 
 // 计算完整的头像URL
 const fullAvatarUrl = computed(() => {
@@ -244,48 +193,10 @@ const handleFileChange = async (event: Event) => {
   flex: 1;
 }
 
-.stats-container {
-  display: flex;
-  justify-content: space-around;
-  flex-wrap: wrap;
-  gap: 20px;
-}
-
-.stat-card {
-  display: flex;
-  align-items: center;
-  padding: 20px;
-  background-color: #f5f7fa;
-  border-radius: 8px;
-  width: calc(25% - 20px);
-  min-width: 150px;
-}
-
-.stat-icon {
-  font-size: 32px;
-  color: #409EFF;
-  margin-right: 15px;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: bold;
-  color: #303133;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: #606266;
-}
-
 @media screen and (max-width: 768px) {
   .profile-info {
     flex-direction: column;
     align-items: center;
-  }
-  
-  .stat-card {
-    width: calc(50% - 20px);
   }
 }
 </style>
