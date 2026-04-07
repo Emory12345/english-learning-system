@@ -25,6 +25,8 @@ public class HomeworkSubmission {
 
     private String image;
 
+    private String audio;
+
     private LocalDateTime submissionDate;
 
     private Integer score;

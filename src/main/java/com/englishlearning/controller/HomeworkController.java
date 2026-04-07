@@ -88,6 +88,7 @@ public class HomeworkController {
             Long homeworkId = Long.valueOf(submissionData.get("homeworkId").toString());
             String content = submissionData.get("content").toString();
             String image = submissionData.get("image") != null ? submissionData.get("image").toString() : null;
+            String audio = submissionData.get("audio") != null ? submissionData.get("audio").toString() : null;
 
             User student = null;
             try {
@@ -137,6 +138,7 @@ public class HomeworkController {
             submission.setStudent(student);
             submission.setContent(content);
             submission.setImage(image);
+            submission.setAudio(audio);
             submission.setSubmissionDate(LocalDateTime.now());
             submission.setStatus("submitted");
 
