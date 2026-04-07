@@ -43,7 +43,16 @@
             <h5>作业内容：</h5>
             <p>{{ submission.content }}</p>
             <div v-if="submission.image" class="submission-image">
-              <img :src="getImageUrl(submission.image)" alt="学生提交的图片" />
+              <img 
+                :src="getImageUrl(submission.image)" 
+                alt="学生提交的图片"
+                @dblclick="previewImage(getImageUrl(submission.image))"
+                class="clickable-image"
+              />
+            </div>
+            <div v-if="submission.audio" class="submission-audio">
+              <h6>提交的音频：</h6>
+              <audio :src="getImageUrl(submission.audio)" controls></audio>
             </div>
           </div>
           <div v-if="submission.status === 'graded'" class="submission-result">
@@ -69,7 +78,16 @@
             <h5>作业内容：</h5>
             <p>{{ selectedSubmission.content }}</p>
             <div v-if="selectedSubmission.image" class="preview-image">
-              <img :src="getImageUrl(selectedSubmission.image)" alt="学生提交的图片" />
+              <img 
+                :src="getImageUrl(selectedSubmission.image)" 
+                alt="学生提交的图片"
+                @dblclick="previewImage(getImageUrl(selectedSubmission.image))"
+                class="clickable-image"
+              />
+            </div>
+            <div v-if="selectedSubmission.audio" class="preview-audio">
+              <h6>提交的音频：</h6>
+              <audio :src="getImageUrl(selectedSubmission.audio)" controls></audio>
             </div>
           </div>
         </div>
@@ -100,6 +118,21 @@
         <el-button type="primary" @click="submitCorrection" :loading="submitting">提交</el-button>
       </template>
     </el-dialog>
+
+    <!-- 图片预览对话框 -->
+    <el-dialog
+      v-model="imageDialogVisible"
+      title="图片预览"
+      width="80%"
+      custom-class="image-preview-dialog"
+    >
+      <div class="image-preview-container">
+        <img :src="previewImageUrl" alt="预览图片" class="large-image" />
+      </div>
+      <template #footer>
+        <el-button @click="imageDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -117,6 +150,10 @@ const filterForm = ref({
 const correctionDialogVisible = ref(false)
 const selectedSubmission = ref<any>(null)
 const submitting = ref(false)
+
+// 图片预览
+const imageDialogVisible = ref(false)
+const previewImageUrl = ref('')
 
 const correctionForm = ref({
   score: 0,
@@ -159,6 +196,9 @@ const fetchHomeworks = async () => {
     const response = await api.homeworks.getAllSubmissions()
     submissions.value = response
     console.log('Fetched homework submissions:', submissions.value)
+    // 检查是否有包含audio字段的提交
+    const submissionsWithAudio = response.filter((sub: any) => sub.audio)
+    console.log('Submissions with audio:', submissionsWithAudio)
   } catch (error) {
     console.error('Failed to fetch homework submissions:', error)
     ElMessage.error('获取作业列表失败')
@@ -219,6 +259,12 @@ const submitCorrection = async () => {
   } finally {
     submitting.value = false
   }
+}
+
+// 预览图片
+const previewImage = (imageUrl: string) => {
+  previewImageUrl.value = imageUrl
+  imageDialogVisible.value = true
 }
 </script>
 
@@ -300,7 +346,9 @@ const submitCorrection = async () => {
 }
 
 .submission-image,
-.preview-image {
+.preview-image,
+.submission-audio,
+.preview-audio {
   margin-top: 15px;
 }
 
@@ -310,6 +358,48 @@ const submitCorrection = async () => {
   max-height: 300px;
   border-radius: 4px;
   border: 1px solid #e4e7ed;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.submission-audio audio,
+.preview-audio audio {
+  max-width: 100%;
+  border-radius: 4px;
+  border: 1px solid #e4e7ed;
+  padding: 10px;
+  background-color: #f9f9f9;
+}
+
+.submission-image img:hover,
+.preview-image img:hover {
+  transform: scale(1.02);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.clickable-image {
+  cursor: pointer;
+}
+
+.image-preview-dialog {
+  .el-dialog__body {
+    padding: 20px;
+  }
+}
+
+.image-preview-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.large-image {
+  max-width: 100%;
+  max-height: 600px;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .submission-result {

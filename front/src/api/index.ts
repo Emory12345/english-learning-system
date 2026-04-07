@@ -118,7 +118,7 @@ export const api = {
     getByCategoryAndType: (category: string, type: string) => request<any[]>(`/homework/category/${category}/type/${type}`),
     getAllSubmissions: () => request<any[]>('/homework/submissions/all'),
     getMySubmissions: () => request<any[]>('/homework/submissions/my'),
-    submit: (data: { homeworkId: string; content: string; image?: string }) => request<any>('/homework/submit', {
+    submit: (data: { homeworkId: string; content: string; image?: string; audio?: string }) => request<any>('/homework/submit', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
@@ -300,6 +300,33 @@ export const api = {
       }
       
       return await response.json();
+    },
+    audio: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/upload/image`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      // 保持与图片上传相同的返回格式
+      return {
+        success: true,
+        audioUrl: result.imageUrl
+      };
     },
   },
   studyRecord: {

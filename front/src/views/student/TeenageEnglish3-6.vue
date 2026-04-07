@@ -208,6 +208,29 @@
             placeholder="请输入作业内容"
           />
         </el-form-item>
+        <el-form-item label="上传图片">
+          <el-upload
+            class="upload-demo"
+            :http-request="customUpload"
+            :file-list="fileList"
+            :auto-upload="true"
+            :show-file-list="false"
+            accept="image/*"
+          >
+            <el-button type="primary">点击上传</el-button>
+            <template #tip>
+              <div class="el-upload__tip">
+                只能上传JPG、PNG等图片文件
+              </div>
+            </template>
+          </el-upload>
+        </el-form-item>
+        <el-form-item v-if="submitForm.image">
+          <div class="uploaded-image">
+            <img :src="`http://localhost:8080${submitForm.image}`" alt="已上传图片" />
+            <el-button type="danger" size="small" @click="removeImage">删除图片</el-button>
+          </div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -432,10 +455,35 @@ const formatTime = (time: string) => {
 const submitDialogVisible = ref(false)
 const submitForm = ref({
   title: '',
-  content: ''
+  content: '',
+  image: ''
 })
 const submitting = ref(false)
 const currentHomeworkId = ref('')
+const fileList = ref([])
+
+// 自定义上传方法
+const customUpload = async (options: any) => {
+  try {
+    const response = await api.upload.image(options.file)
+    if (response.success) {
+      submitForm.value.image = response.imageUrl
+      ElMessage.success('图片上传成功')
+    } else {
+      ElMessage.error(response.message || '上传失败')
+    }
+  } catch (error) {
+    ElMessage.error('图片上传失败，请重试')
+    console.error('Upload error:', error)
+  }
+}
+
+// 删除图片
+const removeImage = () => {
+  submitForm.value.image = ''
+  fileList.value = []
+  ElMessage.success('图片已删除')
+}
 
 // 打开提交作业对话框
 const submitHomework = (homeworkId: string) => {
@@ -447,6 +495,8 @@ const submitHomework = (homeworkId: string) => {
   if (homework) {
     submitForm.value.title = homework.title
     submitForm.value.content = ''
+    submitForm.value.image = ''
+    fileList.value = []
     submitDialogVisible.value = true
   }
 }
@@ -470,7 +520,7 @@ const confirmSubmit = async () => {
     const response = await api.homeworks.submit({
       homeworkId: currentHomeworkId.value,
       content: submitForm.value.content,
-      image: ''
+      image: submitForm.value.image
     })
     console.log('作业提交成功:', response)
     ElMessage.success('作业提交成功')
@@ -795,6 +845,19 @@ const confirmSubmit = async () => {
   margin: 5px 0;
 }
 
+.uploaded-image {
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.uploaded-image img {
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: 4px;
+}
+
 @media screen and (max-width: 768px) {
   .word-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -812,6 +875,10 @@ const confirmSubmit = async () => {
     flex-direction: column;
     gap: 10px;
     text-align: center;
+  }
+  
+  .uploaded-image img {
+    max-width: 150px;
   }
 }
 </style>

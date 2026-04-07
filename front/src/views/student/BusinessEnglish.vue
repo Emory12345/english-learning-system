@@ -290,6 +290,29 @@
             placeholder="请输入作业内容"
           />
         </el-form-item>
+        <el-form-item label="上传音频">
+          <el-upload
+            class="upload-demo"
+            :http-request="customUpload"
+            :file-list="fileList"
+            :auto-upload="true"
+            :show-file-list="false"
+            accept="audio/*"
+          >
+            <el-button type="primary">点击上传</el-button>
+            <template #tip>
+              <div class="el-upload__tip">
+                只能上传MP3、WAV等音频文件
+              </div>
+            </template>
+          </el-upload>
+        </el-form-item>
+        <el-form-item v-if="submitForm.audio">
+          <div class="uploaded-audio">
+            <audio :src="`http://localhost:8080${submitForm.audio}`" controls></audio>
+            <el-button type="danger" size="small" @click="removeAudio">删除音频</el-button>
+          </div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -338,9 +361,10 @@ const mySubmissions = ref<any[]>([])
 
 // 提交作业对话框状态
 const submitDialogVisible = ref(false)
-const submitForm = ref({ title: '', content: '' })
+const submitForm = ref({ title: '', content: '', audio: '' })
 const submitting = ref(false)
 const currentHomeworkId = ref('')
+const fileList = ref([])
 
 // 从后端API获取单词数据（带分页）
 const fetchWords = async () => {
@@ -509,6 +533,29 @@ const getAllHomework = () => {
   return [...speakingHomework.value, ...readingHomework.value, ...listeningHomework.value, ...writingHomework.value]
 }
 
+// 自定义上传方法
+const customUpload = async (options: any) => {
+  try {
+    const response = await api.upload.audio(options.file)
+    if (response.success) {
+      submitForm.value.audio = response.audioUrl
+      ElMessage.success('音频上传成功')
+    } else {
+      ElMessage.error(response.message || '上传失败')
+    }
+  } catch (error) {
+    ElMessage.error('音频上传失败，请重试')
+    console.error('Upload error:', error)
+  }
+}
+
+// 删除音频
+const removeAudio = () => {
+  submitForm.value.audio = ''
+  fileList.value = []
+  ElMessage.success('音频已删除')
+}
+
 // 打开提交作业对话框
 const submitHomework = (homeworkId: string) => {
   console.log('Submitting homework:', homeworkId)
@@ -519,6 +566,8 @@ const submitHomework = (homeworkId: string) => {
   if (homework) {
     submitForm.value.title = homework.title
     submitForm.value.content = ''
+    submitForm.value.audio = ''
+    fileList.value = []
     submitDialogVisible.value = true
   }
 }
@@ -542,7 +591,7 @@ const confirmSubmit = async () => {
     const response = await api.homeworks.submit({
       homeworkId: currentHomeworkId.value,
       content: submitForm.value.content,
-      image: ''
+      audio: submitForm.value.audio
     })
     console.log('作业提交成功:', response)
     ElMessage.success('作业提交成功')
@@ -790,6 +839,18 @@ const confirmSubmit = async () => {
   margin-top: 5px;
 }
 
+.uploaded-audio {
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.uploaded-audio audio {
+  max-width: 300px;
+  border-radius: 4px;
+}
+
 @media screen and (max-width: 768px) {
   .word-item {
     flex-direction: column;
@@ -806,6 +867,10 @@ const confirmSubmit = async () => {
   
   .homework-image {
     max-width: 100%;
+  }
+  
+  .uploaded-image img {
+    max-width: 150px;
   }
 }
 </style>

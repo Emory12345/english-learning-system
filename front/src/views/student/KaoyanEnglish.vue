@@ -289,21 +289,22 @@
             placeholder="请输入作业内容"
           />
         </el-form-item>
-        <el-form-item label="上传图片">
-          <div class="image-upload">
+        <el-form-item label="上传音频">
+          <div class="audio-upload">
             <el-upload
-              class="avatar-uploader"
+              class="audio-uploader"
               :show-file-list="false"
-              :before-upload="beforeImageUpload"
-              :on-change="handleImageChange"
-              accept="image/*"
-              list-type="picture-card"
+              :http-request="customUpload"
+              accept="audio/*"
+              list-type="text"
             >
-              <img v-if="submitForm.image" :src="getImageUrl(submitForm.image)" class="image-preview" />
-              <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
+              <el-button type="primary">
+                <el-icon class="el-icon--left"><Upload /></el-icon>
+                选择音频文件
+              </el-button>
             </el-upload>
-            <div v-if="submitForm.image" class="image-actions">
-              <el-button type="danger" size="small" @click="removeImage">移除图片</el-button>
+            <div v-if="submitForm.audio" class="audio-actions">
+              <el-button type="danger" size="small" @click="removeAudio">移除音频</el-button>
             </div>
           </div>
         </el-form-item>
@@ -355,7 +356,7 @@ const submitDialogVisible = ref(false)
 const submitForm = ref({
   title: '',
   content: '',
-  image: ''
+  audio: ''
 })
 const submitting = ref(false)
 const currentHomeworkId = ref('')
@@ -372,50 +373,26 @@ const getImageUrl = (url: string) => {
   return `http://localhost:8080${url}`
 }
 
-// 图片上传前检查
-const beforeImageUpload = (file: File) => {
-  const isImage = file.type.startsWith('image/')
-  const isLt10M = file.size / 1024 / 1024 < 10
-  
-  if (!isImage) {
-    ElMessage.error('只能上传图片文件!')
-    return false
-  }
-  if (!isLt10M) {
-    ElMessage.error('图片文件大小不能超过 10MB!')
-    return false
-  }
-  return false
-}
-
-// 处理图片选择 - 直接上传到服务器
-const handleImageChange = async (file: any) => {
-  if (file.raw) {
-    try {
-      // 先显示临时预览
-      submitForm.value.image = URL.createObjectURL(file.raw)
-      
-      // 上传图片到服务器
-      const result = await api.upload.image(file.raw)
-      if (result.success) {
-        // 使用服务器返回的图片URL
-        submitForm.value.image = result.imageUrl
-        ElMessage.success('图片上传成功')
-      } else {
-        ElMessage.error(result.message || '图片上传失败')
-        submitForm.value.image = ''
-      }
-    } catch (error: any) {
-      console.error('图片上传失败:', error)
-      ElMessage.error(error.message || '图片上传失败')
-      submitForm.value.image = ''
+// 自定义上传方法
+const customUpload = async (options: any) => {
+  try {
+    const response = await api.upload.audio(options.file)
+    if (response.success) {
+      submitForm.value.audio = response.audioUrl
+      ElMessage.success('音频上传成功')
+    } else {
+      ElMessage.error(response.message || '上传失败')
     }
+  } catch (error) {
+    ElMessage.error('音频上传失败，请重试')
+    console.error('Upload error:', error)
   }
 }
 
-// 移除图片
-const removeImage = () => {
-  submitForm.value.image = ''
+// 删除音频
+const removeAudio = () => {
+  submitForm.value.audio = ''
+  ElMessage.success('音频已删除')
 }
 
 // 从后端API获取单词数据（带分页）
@@ -605,7 +582,7 @@ const submitHomework = (homeworkId: string) => {
   if (homework) {
     submitForm.value.title = homework.title
     submitForm.value.content = ''
-    submitForm.value.image = ''
+    submitForm.value.audio = ''
     submitDialogVisible.value = true
   }
 }
@@ -623,7 +600,7 @@ const confirmSubmit = async () => {
     const response = await api.homeworks.submit({
       homeworkId: currentHomeworkId.value,
       content: submitForm.value.content,
-      image: submitForm.value.image
+      audio: submitForm.value.audio
     })
     console.log('作业提交成功:', response)
     ElMessage.success('作业提交成功')
