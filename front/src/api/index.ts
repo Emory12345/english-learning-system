@@ -69,6 +69,9 @@ async function request<T>(url: string, options: RequestInit & { params?: Record<
 
 // API方法
 export const api = {
+  // 通用请求方法
+  get: <T>(url: string, params?: Record<string, any>) => request<T>(url, { method: 'GET', params }),
+  post: <T>(url: string, data?: any) => request<T>(url, { method: 'POST', body: JSON.stringify(data) }),
   // 认证相关
   auth: {
     login: (data: { email: string; password: string; role: string }) =>
