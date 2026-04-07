@@ -116,7 +116,7 @@ const handleLogin = async () => {
         ElMessage.success('登录成功')
 
         // 根据角色跳转到对应首页
-        switch (loginForm.role) {
+        switch (response.role) {
           case 'student':
             router.push('/student/home')
             break

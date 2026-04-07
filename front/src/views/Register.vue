@@ -26,6 +26,35 @@
         <el-form-item label="确认密码" prop="confirmPassword">
           <el-input v-model="registerForm.confirmPassword" type="password" placeholder="请确认密码" />
         </el-form-item>
+        
+        <!-- 教师专用字段 -->
+        <template v-if="registerForm.role === 'teacher'">
+          <el-form-item label="用户名" prop="username">
+            <el-input v-model="registerForm.username" placeholder="请输入用户名" />
+          </el-form-item>
+          <el-form-item label="性别" prop="gender">
+            <el-radio-group v-model="registerForm.gender">
+              <el-radio label="男">男</el-radio>
+              <el-radio label="女">女</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="教学科目" prop="subject">
+            <el-input v-model="registerForm.subject" placeholder="请输入教学科目" />
+          </el-form-item>
+          <el-form-item label="学历/毕业院校" prop="education">
+            <el-input v-model="registerForm.education" placeholder="请输入学历/毕业院校" />
+          </el-form-item>
+          <el-form-item label="教学年限" prop="experience">
+            <el-input v-model="registerForm.experience" placeholder="请输入教学年限" />
+          </el-form-item>
+          <el-form-item label="个人简介" prop="introduction">
+            <el-input v-model="registerForm.introduction" type="textarea" placeholder="请输入个人简介" />
+          </el-form-item>
+          <el-form-item label="教师资格证号" prop="certificate">
+            <el-input v-model="registerForm.certificate" placeholder="请输入教师资格证号" />
+          </el-form-item>
+        </template>
+        
         <el-form-item>
           <el-button type="primary" @click="handleRegister" :loading="loading" style="width: 100%">注册</el-button>
         </el-form-item>
@@ -53,7 +82,15 @@ const registerForm = reactive({
   name: '',
   email: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  // 教师专用字段
+  username: '',
+  gender: '',
+  subject: '',
+  education: '',
+  experience: '',
+  introduction: '',
+  certificate: ''
 })
 
 const registerRules = {
@@ -109,6 +146,56 @@ const registerRules = {
           callback()
         }
       },
+      trigger: 'blur'
+    }
+  ],
+  // 教师专用字段验证规则
+  username: [
+    {
+      required: registerForm.role === 'teacher',
+      message: '请输入用户名',
+      trigger: 'blur'
+    }
+  ],
+  gender: [
+    {
+      required: registerForm.role === 'teacher',
+      message: '请选择性别',
+      trigger: 'change'
+    }
+  ],
+  subject: [
+    {
+      required: registerForm.role === 'teacher',
+      message: '请输入教学科目',
+      trigger: 'blur'
+    }
+  ],
+  education: [
+    {
+      required: registerForm.role === 'teacher',
+      message: '请输入学历/毕业院校',
+      trigger: 'blur'
+    }
+  ],
+  experience: [
+    {
+      required: registerForm.role === 'teacher',
+      message: '请输入教学年限',
+      trigger: 'blur'
+    }
+  ],
+  introduction: [
+    {
+      required: registerForm.role === 'teacher',
+      message: '请输入个人简介',
+      trigger: 'blur'
+    }
+  ],
+  certificate: [
+    {
+      required: registerForm.role === 'teacher',
+      message: '请输入教师资格证号',
       trigger: 'blur'
     }
   ]

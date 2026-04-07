@@ -129,7 +129,7 @@
           <template v-else-if="userStore.role === 'admin'">
             <el-menu-item index="/admin/home">
               <template #title>
-                <span>首页</span>
+                <span>教师审核</span>
               </template>
             </el-menu-item>
             <el-menu-item index="/admin/user-management">

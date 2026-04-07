@@ -1,104 +1,161 @@
 <template>
   <div class="admin-home">
-    <h2>欢迎回来，{{ userStore.userInfo.name }}！</h2>
+    <h2>教师审核</h2>
     
-    <!-- 系统概览 -->
+    <!-- 审核统计 -->
     <el-card class="overview-card">
       <template #header>
         <div class="card-header">
-          <span>系统概览</span>
+          <span>审核统计</span>
         </div>
       </template>
       <div class="overview-stats">
         <div class="stat-item">
           <el-icon><User /></el-icon>
           <div class="stat-info">
-            <div class="stat-value">{{ stats.users }}</div>
-            <div class="stat-label">用户总数</div>
-          </div>
-        </div>
-        <div class="stat-item">
-          <el-icon><Document /></el-icon>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.courses }}</div>
-            <div class="stat-label">课程总数</div>
+            <div class="stat-value">{{ stats.totalTeachers }}</div>
+            <div class="stat-label">教师总数</div>
           </div>
         </div>
         <div class="stat-item">
           <el-icon><Check /></el-icon>
           <div class="stat-info">
-            <div class="stat-value">{{ stats.pendingCourses }}</div>
-            <div class="stat-label">待审核课程</div>
+            <div class="stat-value">{{ stats.pendingTeachers }}</div>
+            <div class="stat-label">待审核教师</div>
           </div>
         </div>
         <div class="stat-item">
-          <el-icon><Timer /></el-icon>
+          <el-icon><CircleCheck /></el-icon>
           <div class="stat-info">
-            <div class="stat-value">{{ stats.totalStudyTime }}</div>
-            <div class="stat-label">总学习时长（小时）</div>
+            <div class="stat-value">{{ stats.approvedTeachers }}</div>
+            <div class="stat-label">已批准教师</div>
+          </div>
+        </div>
+        <div class="stat-item">
+          <el-icon><Close /></el-icon>
+          <div class="stat-info">
+            <div class="stat-value">{{ stats.rejectedTeachers }}</div>
+            <div class="stat-label">已拒绝教师</div>
           </div>
         </div>
       </div>
     </el-card>
 
-    <!-- 最近活动 -->
-    <el-card class="activities-card">
+    <!-- 待审核教师列表 -->
+    <el-card class="teachers-card">
       <template #header>
         <div class="card-header">
-          <span>最近活动</span>
+          <span>待审核教师</span>
         </div>
       </template>
-      <el-table :data="recentActivities" style="width: 100%">
-        <el-table-column prop="time" label="时间" />
-        <el-table-column prop="type" label="类型" />
-        <el-table-column prop="description" label="描述" />
-        <el-table-column prop="user" label="操作人" />
+      <el-table :data="pendingTeachers" style="width: 100%">
+        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column prop="name" label="姓名" />
+        <el-table-column prop="email" label="邮箱" />
+        <el-table-column prop="username" label="用户名" />
+        <el-table-column prop="subject" label="教学科目" />
+        <el-table-column prop="experience" label="教学年限" />
+        <el-table-column prop="createdAt" label="申请时间" />
+        <el-table-column label="操作" width="200">
+          <template #default="scope">
+            <el-button type="primary" size="small" @click="approveTeacher(scope.row.id)">批准</el-button>
+            <el-button type="danger" size="small" @click="rejectTeacher(scope.row.id)">拒绝</el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, reactive } from 'vue'
 import { useUserStore } from '../../stores/user'
-import { User, Document, Check, Timer } from '@element-plus/icons-vue'
+import { User, Check, CircleCheck, Close } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { api } from '../../api'
 
 const userStore = useUserStore()
 
-// 模拟统计数据
-const stats = {
-  users: 500,
-  courses: 100,
-  pendingCourses: 5,
-  totalStudyTime: 10000
+// 统计数据
+const stats = reactive({
+  totalTeachers: 0,
+  pendingTeachers: 0,
+  approvedTeachers: 0,
+  rejectedTeachers: 0
+})
+
+// 待审核教师数据
+const pendingTeachers = ref([])
+
+// 加载待审核教师列表
+const loadPendingTeachers = async () => {
+  try {
+    // 这里应该调用后端API获取待审核教师列表
+    // 暂时使用模拟数据
+    pendingTeachers.value = [
+      {
+        id: 1,
+        name: '张老师',
+        email: 'zhang@example.com',
+        username: 'zhanglaoshi',
+        subject: '英语',
+        experience: '5年',
+        createdAt: '2024-01-15 14:30'
+      },
+      {
+        id: 2,
+        name: '李老师',
+        email: 'li@example.com',
+        username: 'lilaoshi',
+        subject: '数学',
+        experience: '3年',
+        createdAt: '2024-01-15 13:20'
+      }
+    ]
+    
+    // 模拟统计数据
+    stats.totalTeachers = 50
+    stats.pendingTeachers = pendingTeachers.value.length
+    stats.approvedTeachers = 40
+    stats.rejectedTeachers = 8
+  } catch (error) {
+    console.error('加载待审核教师失败:', error)
+    ElMessage.error('加载待审核教师失败')
+  }
 }
 
-// 模拟最近活动数据
-const recentActivities = [
-  {
-    time: '2024-01-15 14:30',
-    type: '用户注册',
-    description: '新用户注册',
-    user: '张三'
-  },
-  {
-    time: '2024-01-15 13:20',
-    type: '课程提交',
-    description: '教师提交新课程',
-    user: '李四'
-  },
-  {
-    time: '2024-01-15 10:15',
-    type: '课程审核',
-    description: '审核通过课程',
-    user: '管理员'
-  },
-  {
-    time: '2024-01-14 16:45',
-    type: '用户登录',
-    description: '用户登录系统',
-    user: '王五'
+// 批准教师
+const approveTeacher = async (id: number) => {
+  try {
+    // 这里应该调用后端API批准教师
+    // 暂时使用模拟
+    ElMessage.success('教师批准成功')
+    // 重新加载待审核教师列表
+    loadPendingTeachers()
+  } catch (error) {
+    console.error('批准教师失败:', error)
+    ElMessage.error('批准教师失败')
   }
-]
+}
+
+// 拒绝教师
+const rejectTeacher = async (id: number) => {
+  try {
+    // 这里应该调用后端API拒绝教师
+    // 暂时使用模拟
+    ElMessage.success('教师拒绝成功')
+    // 重新加载待审核教师列表
+    loadPendingTeachers()
+  } catch (error) {
+    console.error('拒绝教师失败:', error)
+    ElMessage.error('拒绝教师失败')
+  }
+}
+
+// 页面加载时获取待审核教师列表
+onMounted(() => {
+  loadPendingTeachers()
+})
 </script>
 
 <style scoped>
