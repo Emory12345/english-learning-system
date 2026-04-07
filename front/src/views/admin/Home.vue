@@ -1,45 +1,6 @@
 <template>
   <div class="admin-home">
     <h2>教师审核</h2>
-    
-    <!-- 审核统计 -->
-    <el-card class="overview-card">
-      <template #header>
-        <div class="card-header">
-          <span>审核统计</span>
-        </div>
-      </template>
-      <div class="overview-stats">
-        <div class="stat-item">
-          <el-icon><User /></el-icon>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.totalTeachers }}</div>
-            <div class="stat-label">教师总数</div>
-          </div>
-        </div>
-        <div class="stat-item">
-          <el-icon><Check /></el-icon>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.pendingTeachers }}</div>
-            <div class="stat-label">待审核教师</div>
-          </div>
-        </div>
-        <div class="stat-item">
-          <el-icon><CircleCheck /></el-icon>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.approvedTeachers }}</div>
-            <div class="stat-label">已批准教师</div>
-          </div>
-        </div>
-        <div class="stat-item">
-          <el-icon><Close /></el-icon>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.rejectedTeachers }}</div>
-            <div class="stat-label">已拒绝教师</div>
-          </div>
-        </div>
-      </div>
-    </el-card>
 
     <!-- 待审核教师列表 -->
     <el-card class="teachers-card">
@@ -68,21 +29,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useUserStore } from '../../stores/user'
-import { User, Check, CircleCheck, Close } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { api } from '../../api'
 
 const userStore = useUserStore()
-
-// 统计数据
-const stats = reactive({
-  totalTeachers: 0,
-  pendingTeachers: 0,
-  approvedTeachers: 0,
-  rejectedTeachers: 0
-})
 
 // 待审核教师数据
 const pendingTeachers = ref([])
@@ -93,13 +45,6 @@ const loadPendingTeachers = async () => {
     // 调用后端API获取待审核教师列表
     const response = await api.get('/admin/teachers/pending')
     pendingTeachers.value = response
-    
-    // 加载统计数据
-    const statsResponse = await api.get('/admin/teachers/statistics')
-    stats.totalTeachers = statsResponse.totalTeachers
-    stats.pendingTeachers = statsResponse.pendingTeachers
-    stats.approvedTeachers = statsResponse.approvedTeachers
-    stats.rejectedTeachers = statsResponse.rejectedTeachers
   } catch (error) {
     console.error('加载待审核教师失败:', error)
     ElMessage.error('加载待审核教师失败')
@@ -156,47 +101,7 @@ onMounted(() => {
   align-items: center;
 }
 
-.overview-stats {
-  display: flex;
-  justify-content: space-around;
-  flex-wrap: wrap;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  margin: 10px 0;
-  padding: 15px;
-  background-color: #f5f7fa;
-  border-radius: 8px;
-  width: calc(25% - 20px);
-  min-width: 150px;
-}
-
-.stat-item .el-icon {
-  font-size: 24px;
-  color: #409EFF;
-  margin-right: 10px;
-}
-
-.stat-value {
-  font-size: 20px;
-  font-weight: bold;
-  color: #303133;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: #606266;
-}
-
 .activities-card {
   margin-top: 20px;
-}
-
-@media screen and (max-width: 768px) {
-  .stat-item {
-    width: calc(50% - 20px);
-  }
 }
 </style>

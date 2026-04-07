@@ -127,6 +127,11 @@
 
           <!-- 管理后台菜单 -->
           <template v-else-if="userStore.role === 'admin'">
+            <el-menu-item index="/admin/data-statistics">
+              <template #title>
+                <span>首页</span>
+              </template>
+            </el-menu-item>
             <el-menu-item index="/admin/home">
               <template #title>
                 <span>教师审核</span>
@@ -137,19 +142,9 @@
                 <span>用户管理</span>
               </template>
             </el-menu-item>
-            <el-menu-item index="/admin/course-audit">
+            <el-menu-item index="/admin/video-audit">
               <template #title>
                 <span>课程审核</span>
-              </template>
-            </el-menu-item>
-            <el-menu-item index="/admin/data-statistics">
-              <template #title>
-                <span>数据统计</span>
-              </template>
-            </el-menu-item>
-            <el-menu-item index="/admin/system-settings">
-              <template #title>
-                <span>系统设置</span>
               </template>
             </el-menu-item>
           </template>

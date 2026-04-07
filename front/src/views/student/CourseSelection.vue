@@ -9,18 +9,20 @@
           <el-form-item label="课程类型">
             <el-select v-model="filterForm.type" placeholder="请选择课程类型">
               <el-option label="全部" value="" />
-              <el-option label="口语" value="口语" />
-              <el-option label="听力" value="听力" />
-              <el-option label="阅读" value="阅读" />
-              <el-option label="写作" value="写作" />
+              <el-option label="青少年英语" value="teenage" />
+              <el-option label="考研英语" value="kaoyan" />
+              <el-option label="四六级英语" value="cet" />
+              <el-option label="雅思托福" value="ielts_toefl" />
+              <el-option label="商务英语" value="business" />
             </el-select>
           </el-form-item>
           <el-form-item label="难度级别">
             <el-select v-model="filterForm.level" placeholder="请选择难度级别">
               <el-option label="全部" value="" />
-              <el-option label="初级" value="初级" />
-              <el-option label="中级" value="中级" />
-              <el-option label="高级" value="高级" />
+              <el-option label="入门" value="beginner" />
+              <el-option label="基础" value="basic" />
+              <el-option label="进阶" value="intermediate" />
+              <el-option label="高级" value="advanced" />
             </el-select>
           </el-form-item>
           <el-form-item>
@@ -46,20 +48,18 @@
       <div class="course-grid">
         <div v-for="course in filteredCourses" :key="course.id" class="course-card">
           <div class="course-image">
-            <img :src="`http://localhost:8080${course.image}`" :alt="course.title" />
+            <img :src="course.coverImage || 'https://via.placeholder.com/300x180'" :alt="course.name" />
           </div>
           <div class="course-info">
-            <h3>{{ course.title }}</h3>
+            <h3>{{ course.name }}</h3>
             <p>{{ course.description }}</p>
             <div class="course-meta">
-              <span class="course-type">{{ course.type }}</span>
+              <span class="course-type">{{ course.category }}</span>
               <span class="course-level">{{ course.level }}</span>
-              <span class="course-duration">{{ course.duration }} 课时</span>
+              <span class="course-duration">{{ course.duration }} 分钟</span>
             </div>
             <div class="course-actions">
-              <el-button type="primary" size="small" @click="enrollCourse(course.id)">
-                {{ course.enrolled ? '已报名' : '立即报名' }}
-              </el-button>
+              <el-button type="primary" size="small" @click="enrollCourse(course.id)">立即报名</el-button>
               <el-button size="small" @click="goToVideoPlayer(course.id)">查看详情</el-button>
             </div>
           </div>
@@ -117,9 +117,9 @@ const fetchCourses = async () => {
 // 筛选后的课程
 const filteredCourses = computed(() => {
   return courses.value.filter(course => {
-    const matchesType = !filterForm.value.type || course.type === filterForm.value.type
+    const matchesType = !filterForm.value.type || course.category === filterForm.value.type
     const matchesLevel = !filterForm.value.level || course.level === filterForm.value.level
-    const matchesKeyword = !filterForm.value.keyword || course.title.toLowerCase().includes(filterForm.value.keyword.toLowerCase())
+    const matchesKeyword = !filterForm.value.keyword || course.name.toLowerCase().includes(filterForm.value.keyword.toLowerCase())
     return matchesType && matchesLevel && matchesKeyword
   })
 })
@@ -141,13 +141,34 @@ const hasSelectedFilters = computed(() => {
 })
 
 // 计算属性：选中的筛选条件
+const getTypeLabel = (type: string) => {
+  const typeMap: Record<string, string> = {
+    'teenage': '青少年英语',
+    'kaoyan': '考研英语',
+    'cet': '四六级英语',
+    'ielts_toefl': '雅思托福',
+    'business': '商务英语'
+  }
+  return typeMap[type] || type
+}
+
+const getLevelLabel = (level: string) => {
+  const levelMap: Record<string, string> = {
+    'beginner': '入门',
+    'basic': '基础',
+    'intermediate': '进阶',
+    'advanced': '高级'
+  }
+  return levelMap[level] || level
+}
+
 const selectedFilters = computed(() => {
   const filters = []
   if (filterForm.value.type) {
-    filters.push({ key: 'type', label: '课程类型', value: filterForm.value.type })
+    filters.push({ key: 'type', label: '课程类型', value: getTypeLabel(filterForm.value.type) })
   }
   if (filterForm.value.level) {
-    filters.push({ key: 'level', label: '难度级别', value: filterForm.value.level })
+    filters.push({ key: 'level', label: '难度级别', value: getLevelLabel(filterForm.value.level) })
   }
   if (filterForm.value.keyword) {
     filters.push({ key: 'keyword', label: '关键词', value: filterForm.value.keyword })

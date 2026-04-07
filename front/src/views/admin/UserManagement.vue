@@ -34,7 +34,7 @@
         <el-table-column prop="status" label="状态" />
         <el-table-column label="操作">
           <template #default="scope">
-            <el-button size="small" @click="editUser(scope.row.id)">编辑</el-button>
+            <el-button size="small" @click="editUser(scope.row)">编辑</el-button>
             <el-button size="small" type="danger" @click="deleteUser(scope.row.id)">删除</el-button>
           </template>
         </el-table-column>
@@ -44,13 +44,51 @@
       <div class="pagination">
         <el-pagination
           layout="prev, pager, next"
-          :total="users.length"
-          :page-size="10"
+          :total="filteredUsersCount"
+          :page-size="pageSize"
           :current-page="currentPage"
           @current-change="handlePageChange"
         />
       </div>
     </el-card>
+
+    <!-- 编辑用户弹窗 -->
+    <el-dialog
+      v-model="editDialogVisible"
+      title="编辑用户"
+      width="500px"
+    >
+      <el-form :model="editForm" label-width="80px">
+        <el-form-item label="姓名">
+          <el-input v-model="editForm.name" />
+        </el-form-item>
+        <el-form-item label="邮箱">
+          <el-input v-model="editForm.email" />
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input v-model="editForm.password" />
+        </el-form-item>
+        <el-form-item label="用户类型">
+          <el-select v-model="editForm.role" placeholder="请选择用户类型">
+            <el-option label="学生" value="student" />
+            <el-option label="教师" value="teacher" />
+            <el-option label="管理员" value="admin" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="editForm.status" placeholder="请选择状态">
+            <el-option label="活跃" value="active" />
+            <el-option label="禁用" value="inactive" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="editDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="saveUser">保存</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -70,15 +108,47 @@ const filterForm = ref({
 // 用户数据
 const users = ref<any[]>([])
 
+// 页面大小
+const pageSize = ref(10)
+
+// 编辑弹窗可见性
+const editDialogVisible = ref(false)
+
+// 编辑表单数据
+const editForm = ref({
+  id: '',
+  name: '',
+  email: '',
+  password: '',
+  role: '',
+  status: ''
+})
+
 // 筛选后的用户
 const filteredUsers = computed(() => {
-  return users.value.filter(user => {
+  const filtered = users.value.filter(user => {
     const matchesRole = !filterForm.value.role || user.role === filterForm.value.role
     const matchesKeyword = !filterForm.value.keyword || 
       user.name.toLowerCase().includes(filterForm.value.keyword.toLowerCase()) || 
       user.email.toLowerCase().includes(filterForm.value.keyword.toLowerCase())
     return matchesRole && matchesKeyword
   })
+  
+  // 计算分页
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filtered.slice(start, end)
+})
+
+// 筛选后的用户总数
+const filteredUsersCount = computed(() => {
+  return users.value.filter(user => {
+    const matchesRole = !filterForm.value.role || user.role === filterForm.value.role
+    const matchesKeyword = !filterForm.value.keyword || 
+      user.name.toLowerCase().includes(filterForm.value.keyword.toLowerCase()) || 
+      user.email.toLowerCase().includes(filterForm.value.keyword.toLowerCase())
+    return matchesRole && matchesKeyword
+  }).length
 })
 
 // 获取用户列表
@@ -103,9 +173,34 @@ const handlePageChange = (page: number) => {
 }
 
 // 编辑用户
-const editUser = (userId: string) => {
-  // 实际项目中这里会打开编辑用户的弹窗
-  ElMessage.info(`编辑用户：${userId}`)
+const editUser = (user: any) => {
+  // 填充编辑表单
+  editForm.value = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    password: user.password,
+    role: user.role,
+    status: user.status
+  }
+  // 显示编辑弹窗
+  editDialogVisible.value = true
+}
+
+// 保存用户
+const saveUser = async () => {
+  try {
+    // 调用后端API更新用户信息
+    await api.users.update(editForm.value.id, editForm.value)
+    ElMessage.success('用户信息更新成功')
+    // 关闭弹窗
+    editDialogVisible.value = false
+    // 重新获取用户列表
+    await fetchUsers()
+  } catch (error: any) {
+    console.error('更新用户信息失败:', error)
+    ElMessage.error('更新用户信息失败')
+  }
 }
 
 // 删除用户

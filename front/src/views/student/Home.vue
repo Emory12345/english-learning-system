@@ -141,26 +141,7 @@ const carouselItems = ref([
 ])
 
 // 推荐课程数据
-const recommendedCourses = ref([
-  {
-    id: '2',
-    title: '考研英语',
-    description: '为考研学生设计的英语课程，涵盖词汇、阅读、写作等核心内容，帮助你在考研英语中取得优异成绩。',
-    image: '/uploads/graduate-exam.jpg'
-  },
-  {
-    id: '3',
-    title: '四六级英语',
-    description: '针对大学英语四六级考试的专项课程，提供听力、阅读、翻译、写作全方位训练，助你轻松通过考试。',
-    image: '/uploads/cet-4-6.jpg'
-  },
-  {
-    id: '4',
-    title: '雅思托福',
-    description: '为准备出国留学的学生提供的雅思托福考试培训，全面提升英语能力，助你取得理想成绩。',
-    image: '/uploads/ielts-toefl.jpg'
-  }
-])
+const recommendedCourses = ref<any[]>([])
 
 // 学习概览数据
 const overviewData = ref({

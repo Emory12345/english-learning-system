@@ -160,6 +160,7 @@ const routes: RouteRecordRaw[] = [
     name: 'AdminLayout',
     component: () => import('../components/Layout.vue'),
     meta: { requiresAuth: true, roles: ['admin'] },
+    redirect: '/admin/data-statistics',
     children: [
       {
         path: 'home',
@@ -175,6 +176,11 @@ const routes: RouteRecordRaw[] = [
         path: 'course-audit',
         name: 'CourseAudit',
         component: () => import('../views/admin/CourseAudit.vue')
+      },
+      {
+        path: 'video-audit',
+        name: 'VideoAudit',
+        component: () => import('../views/admin/VideoAudit.vue')
       },
       {
         path: 'data-statistics',

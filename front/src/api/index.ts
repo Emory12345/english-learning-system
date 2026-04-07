@@ -148,6 +148,12 @@ export const api = {
     delete: (id: string) => request<{ message: string }>(`/admin/users/${id}`, {
       method: 'DELETE',
     }),
+    update: (id: string, data: any) => request<any>(`/admin/users/${id}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    getStats: () => request<any>('/admin/users/stats'),
+    getGrowth: () => request<any>('/admin/users/growth'),
   },
   
   // 管理员相关
@@ -158,6 +164,14 @@ export const api = {
       body: JSON.stringify(data),
     }),
     deleteCourse: (id: string) => request<{ message: string }>(`/admin/courses/${id}`, {
+      method: 'DELETE',
+    }),
+    getPendingVideos: () => request<any[]>('/admin/videos/pending'),
+    auditVideo: (data: { videoId: string; status: string }) => request<any>('/admin/videos/audit', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    deleteVideo: (id: string) => request<{ message: string }>(`/admin/videos/${id}`, {
       method: 'DELETE',
     }),
   },
