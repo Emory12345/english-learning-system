@@ -90,34 +90,16 @@ const pendingTeachers = ref([])
 // 加载待审核教师列表
 const loadPendingTeachers = async () => {
   try {
-    // 这里应该调用后端API获取待审核教师列表
-    // 暂时使用模拟数据
-    pendingTeachers.value = [
-      {
-        id: 1,
-        name: '张老师',
-        email: 'zhang@example.com',
-        username: 'zhanglaoshi',
-        subject: '英语',
-        experience: '5年',
-        createdAt: '2024-01-15 14:30'
-      },
-      {
-        id: 2,
-        name: '李老师',
-        email: 'li@example.com',
-        username: 'lilaoshi',
-        subject: '数学',
-        experience: '3年',
-        createdAt: '2024-01-15 13:20'
-      }
-    ]
+    // 调用后端API获取待审核教师列表
+    const response = await api.get('/admin/teachers/pending')
+    pendingTeachers.value = response
     
-    // 模拟统计数据
-    stats.totalTeachers = 50
-    stats.pendingTeachers = pendingTeachers.value.length
-    stats.approvedTeachers = 40
-    stats.rejectedTeachers = 8
+    // 加载统计数据
+    const statsResponse = await api.get('/admin/teachers/statistics')
+    stats.totalTeachers = statsResponse.totalTeachers
+    stats.pendingTeachers = statsResponse.pendingTeachers
+    stats.approvedTeachers = statsResponse.approvedTeachers
+    stats.rejectedTeachers = statsResponse.rejectedTeachers
   } catch (error) {
     console.error('加载待审核教师失败:', error)
     ElMessage.error('加载待审核教师失败')
@@ -127,8 +109,8 @@ const loadPendingTeachers = async () => {
 // 批准教师
 const approveTeacher = async (id: number) => {
   try {
-    // 这里应该调用后端API批准教师
-    // 暂时使用模拟
+    // 调用后端API批准教师
+    await api.post(`/admin/teachers/approve/${id}`)
     ElMessage.success('教师批准成功')
     // 重新加载待审核教师列表
     loadPendingTeachers()
@@ -141,8 +123,8 @@ const approveTeacher = async (id: number) => {
 // 拒绝教师
 const rejectTeacher = async (id: number) => {
   try {
-    // 这里应该调用后端API拒绝教师
-    // 暂时使用模拟
+    // 调用后端API拒绝教师
+    await api.post(`/admin/teachers/reject/${id}`)
     ElMessage.success('教师拒绝成功')
     // 重新加载待审核教师列表
     loadPendingTeachers()
