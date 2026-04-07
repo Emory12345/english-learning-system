@@ -93,6 +93,25 @@
             </div>
           </div>
         </el-form-item>
+        <el-form-item label="音频">
+          <div class="audio-upload">
+            <el-upload
+              class="audio-uploader"
+              :show-file-list="false"
+              :http-request="customUpload"
+              accept="audio/*"
+              list-type="text"
+            >
+              <el-button type="primary">
+                <el-icon class="el-icon--left"><Upload /></el-icon>
+                选择音频文件
+              </el-button>
+            </el-upload>
+            <div v-if="editForm.audio" class="audio-actions">
+              <el-button type="danger" size="small" @click="removeAudio">移除音频</el-button>
+            </div>
+          </div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -123,7 +142,8 @@ const editForm = ref({
   content: '',
   category: '',
   type: '',
-  image: ''
+  image: '',
+  audio: ''
 })
 
 // 格式化时间
@@ -160,7 +180,8 @@ const editHomework = (homework: any) => {
     content: homework.content,
     category: homework.category,
     type: homework.type,
-    image: homework.image || ''
+    image: homework.image || '',
+    audio: homework.audio || ''
   }
   editDialogVisible.value = true
 }
@@ -178,7 +199,8 @@ const confirmEdit = async () => {
     content: editForm.value.content,
     category: editForm.value.category,
     type: editForm.value.type,
-    image: editForm.value.image
+    image: editForm.value.image,
+    audio: editForm.value.audio
   })
   
   try {
@@ -187,7 +209,8 @@ const confirmEdit = async () => {
       content: editForm.value.content,
       category: editForm.value.category,
       type: editForm.value.type,
-      image: editForm.value.image || null
+      image: editForm.value.image || null,
+      audio: editForm.value.audio || null
     })
     ElMessage.success('作业编辑成功')
     editDialogVisible.value = false
@@ -280,6 +303,28 @@ const handleImageChange = async (file: any) => {
 const removeImage = () => {
   editForm.value.image = ''
 }
+
+// 自定义上传方法
+const customUpload = async (options: any) => {
+  try {
+    const response = await api.upload.audio(options.file)
+    if (response.success) {
+      editForm.value.audio = response.audioUrl
+      ElMessage.success('音频上传成功')
+    } else {
+      ElMessage.error(response.message || '上传失败')
+    }
+  } catch (error) {
+    ElMessage.error('音频上传失败，请重试')
+    console.error('Upload error:', error)
+  }
+}
+
+// 删除音频
+const removeAudio = () => {
+  editForm.value.audio = ''
+  ElMessage.success('音频已删除')
+}
 </script>
 
 <style scoped>
@@ -341,6 +386,16 @@ const removeImage = () => {
 }
 
 .image-actions {
+  padding-top: 10px;
+}
+
+.audio-upload {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+.audio-actions {
   padding-top: 10px;
 }
 </style>
