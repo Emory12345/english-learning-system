@@ -23,6 +23,8 @@ public class Homework {
 
     private String image;
 
+    private String audio;
+
     @ManyToOne
     @JoinColumn(name = "course_id")
     private Course course;

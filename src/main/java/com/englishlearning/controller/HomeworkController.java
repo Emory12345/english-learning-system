@@ -40,6 +40,7 @@ public class HomeworkController {
         String category = homeworkData.get("category").toString();
         String type = homeworkData.get("type").toString();
         String image = homeworkData.get("image") != null ? homeworkData.get("image").toString() : null;
+        String audio = homeworkData.get("audio") != null ? homeworkData.get("audio").toString() : null;
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
@@ -51,6 +52,7 @@ public class HomeworkController {
         homework.setCategory(category);
         homework.setType(type);
         homework.setImage(image);
+        homework.setAudio(audio);
         homework.setTeacher(teacher);
         homework.setCreatedAt(LocalDateTime.now());
 
@@ -209,6 +211,9 @@ public class HomeworkController {
         }
         if (homeworkData.containsKey("image")) {
             homework.setImage(homeworkData.get("image") != null ? homeworkData.get("image").toString() : null);
+        }
+        if (homeworkData.containsKey("audio")) {
+            homework.setAudio(homeworkData.get("audio") != null ? homeworkData.get("audio").toString() : null);
         }
         
         return homeworkRepository.save(homework);
