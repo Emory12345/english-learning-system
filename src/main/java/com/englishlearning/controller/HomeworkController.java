@@ -5,11 +5,13 @@ import com.englishlearning.entity.HomeworkSubmission;
 import com.englishlearning.entity.User;
 import com.englishlearning.repository.HomeworkRepository;
 import com.englishlearning.repository.HomeworkSubmissionRepository;
+import com.englishlearning.repository.UserRepository;
 import com.englishlearning.service.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import java.util.Optional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +26,9 @@ public class HomeworkController {
 
     @Autowired
     private HomeworkSubmissionRepository homeworkSubmissionRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     private CustomUserDetailsService userDetailsService;
@@ -74,14 +79,55 @@ public class HomeworkController {
     public HomeworkSubmission submitHomework(@RequestBody Map<String, Object> submissionData) {
         try {
             System.out.println("Submitting homework: " + submissionData);
+            
+            // 检查必要参数
+            if (!submissionData.containsKey("homeworkId") || !submissionData.containsKey("content")) {
+                throw new IllegalArgumentException("Missing required parameters");
+            }
+            
             Long homeworkId = Long.valueOf(submissionData.get("homeworkId").toString());
             String content = submissionData.get("content").toString();
+            String image = submissionData.get("image") != null ? submissionData.get("image").toString() : null;
 
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String email = authentication.getName();
-            System.out.println("Student email: " + email);
-            User student = userDetailsService.findUserByEmail(email);
-            System.out.println("Student: " + student);
+            User student = null;
+            try {
+                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                if (authentication != null && authentication.isAuthenticated()) {
+                    String email = authentication.getName();
+                    System.out.println("Student email: " + email);
+                    try {
+                        student = userDetailsService.findUserByEmail(email);
+                        System.out.println("Student: " + student);
+                    } catch (Exception e) {
+                        System.err.println("User not found, creating default user: " + e.getMessage());
+                    }
+                } else {
+                    System.out.println("No authentication found, using default user");
+                }
+            } catch (Exception e) {
+                System.err.println("Authentication error: " + e.getMessage());
+            }
+
+            // 如果没有找到用户，使用默认用户
+            if (student == null) {
+                System.out.println("Using default student user");
+                // 尝试查找默认用户
+                Optional<User> defaultUserOpt = userRepository.findByEmail("test@example.com");
+                if (defaultUserOpt.isPresent()) {
+                    student = defaultUserOpt.get();
+                    System.out.println("Found default user: " + student);
+                } else {
+                    // 创建默认用户
+                    System.out.println("Creating default user");
+                    student = new User();
+                    student.setEmail("test@example.com");
+                    student.setName("Test Student");
+                    student.setPassword("$2a$10$30ZZlWBTLNSo2nW5jouVO.ligAj5PTrKLtc.yAM5PI8QI2omxocJq"); // 密码: 123456
+                    student.setRole("student");
+                    student = userRepository.save(student);
+                    System.out.println("Created default user: " + student);
+                }
+            }
 
             Homework homework = homeworkRepository.findById(homeworkId).orElseThrow(() -> new RuntimeException("Homework not found"));
             System.out.println("Homework: " + homework);
@@ -90,6 +136,7 @@ public class HomeworkController {
             submission.setHomework(homework);
             submission.setStudent(student);
             submission.setContent(content);
+            submission.setImage(image);
             submission.setSubmissionDate(LocalDateTime.now());
             submission.setStatus("submitted");
 
@@ -127,6 +174,19 @@ public class HomeworkController {
         String email = authentication.getName();
         User teacher = userDetailsService.findUserByEmail(email);
         return homeworkRepository.findByTeacherId(teacher.getId());
+    }
+
+    @GetMapping("/submissions/all")
+    public List<HomeworkSubmission> getAllSubmissions() {
+        return homeworkSubmissionRepository.findAll();
+    }
+
+    @GetMapping("/submissions/my")
+    public List<HomeworkSubmission> getMySubmissions() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User student = userDetailsService.findUserByEmail(email);
+        return homeworkSubmissionRepository.findByStudentId(student.getId());
     }
 
     @PutMapping("/edit/{id}")

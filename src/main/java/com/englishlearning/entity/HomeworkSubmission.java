@@ -23,6 +23,8 @@ public class HomeworkSubmission {
 
     private String content;
 
+    private String image;
+
     private LocalDateTime submissionDate;
 
     private Integer score;
