@@ -486,8 +486,8 @@ const handleUploadSuccess = () => {
 
 const fetchVideos = async () => {
   try {
-    // 调用后端API获取视频列表
-    const response = await api.videos.getAll()
+    // 调用后端API获取教师自己的视频列表
+    const response = await api.videos.getTeacherVideos()
     // 过滤出雅思和托福的视频
     videos.value = response.filter((video: any) => video.category === '雅思' || video.category === '托福')
     console.log('Fetched videos from API:', videos.value)

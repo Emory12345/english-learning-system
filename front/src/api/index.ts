@@ -108,6 +108,7 @@ export const api = {
       method: 'POST',
     }),
     getEnrolled: () => request<any[]>('/course/enrolled'),
+    getTeacherCourses: () => request<any[]>('/course/teacher'),
   },
 
   // 作业相关
@@ -131,6 +132,7 @@ export const api = {
     }),
     getSubmissions: (homeworkId: string) => request<any[]>(`/homework/submissions/${homeworkId}`),
     getTeacherHomework: () => request<any[]>('/homework/teacher'),
+    getTeacherSubmissions: () => request<any[]>('/homework/submissions/teacher'),
     editHomework: (id: string, data: any) => request<any>(`/homework/edit/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -227,6 +229,7 @@ export const api = {
     getAll: () => request<any[]>('/api/videos'),
     getByCategory: (category: string) => request<any[]>(`/api/videos/category/${category}`),
     getByCategoryAndType: (category: string, type: string) => request<any[]>(`/api/videos/category/${category}/type/${type}`),
+    getTeacherVideos: () => request<any[]>('/api/videos/teacher'),
     delete: (id: number) => request<any>(`/api/videos/${id}`, {
       method: 'DELETE',
     }),

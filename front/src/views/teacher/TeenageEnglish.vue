@@ -602,8 +602,8 @@ const handleUploadSuccess = () => {
 // 获取视频列表
 const fetchVideos = async () => {
   try {
-    // 调用后端API获取视频列表
-    const response = await api.videos.getAll()
+    // 调用后端API获取教师自己的视频列表
+    const response = await api.videos.getTeacherVideos()
     videos.value = response
     console.log('Fetched videos from API:', response)
   } catch (error) {

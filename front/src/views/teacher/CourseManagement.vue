@@ -39,58 +39,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { api } from '../../api'
 
 const currentPage = ref(1)
-
-// 模拟课程数据
-const courses = ref([
-  {
-    id: '1',
-    title: '初级英语口语',
-    type: '口语',
-    level: '初级',
-    duration: 20,
-    studentCount: 30
-  },
-  {
-    id: '2',
-    title: '商务英语进阶',
-    type: '口语',
-    level: '中级',
-    duration: 30,
-    studentCount: 25
-  },
-  {
-    id: '3',
-    title: '英语听力训练',
-    type: '听力',
-    level: '中级',
-    duration: 25,
-    studentCount: 20
-  },
-  {
-    id: '4',
-    title: '英语阅读技巧',
-    type: '阅读',
-    level: '中级',
-    duration: 22,
-    studentCount: 18
-  },
-  {
-    id: '5',
-    title: '英语写作提升',
-    type: '写作',
-    level: '高级',
-    duration: 28,
-    studentCount: 15
-  }
-])
+const courses = ref<any[]>([])
+const loading = ref(false)
 
 // 分页变化
 const handlePageChange = (page: number) => {
   currentPage.value = page
+}
+
+// 获取教师课程列表
+const getTeacherCourses = async () => {
+  loading.value = true
+  try {
+    const response = await api.courses.getTeacherCourses()
+    courses.value = response
+  } catch (error: any) {
+    console.error('获取课程列表失败:', error)
+    ElMessage.error('获取课程列表失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 // 添加课程
@@ -110,6 +83,11 @@ const deleteCourse = (courseId: string) => {
   // 实际项目中这里会弹出确认框
   ElMessage.info(`删除课程：${courseId}`)
 }
+
+// 页面加载时获取课程列表
+onMounted(() => {
+  getTeacherCourses()
+})
 </script>
 
 <style scoped>

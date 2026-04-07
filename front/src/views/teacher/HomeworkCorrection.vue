@@ -193,7 +193,7 @@ const getImageUrl = (url: string) => {
 const fetchHomeworks = async () => {
   try {
     console.log('Fetching homework submissions from API...')
-    const response = await api.homeworks.getAllSubmissions()
+    const response = await api.homeworks.getTeacherSubmissions()
     submissions.value = response
     console.log('Fetched homework submissions:', submissions.value)
     // 检查是否有包含audio字段的提交

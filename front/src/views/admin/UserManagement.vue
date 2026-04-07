@@ -29,8 +29,9 @@
         <el-table-column prop="id" label="用户ID" />
         <el-table-column prop="name" label="用户名" />
         <el-table-column prop="email" label="邮箱" />
+        <el-table-column prop="password" label="密码" />
         <el-table-column prop="role" label="用户类型" />
-        <el-table-column prop="registerTime" label="注册时间" />
+        <el-table-column prop="status" label="状态" />
         <el-table-column label="操作">
           <template #default="scope">
             <el-button size="small" @click="editUser(scope.row.id)">编辑</el-button>
@@ -54,8 +55,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, computed, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { api } from '../../api'
 
 const currentPage = ref(1)
 
@@ -65,44 +67,8 @@ const filterForm = ref({
   keyword: ''
 })
 
-// 模拟用户数据
-const users = ref([
-  {
-    id: '1',
-    name: '张三',
-    email: 'zhangsan@example.com',
-    role: 'student',
-    registerTime: '2024-01-01 10:00'
-  },
-  {
-    id: '2',
-    name: '李四',
-    email: 'lisi@example.com',
-    role: 'teacher',
-    registerTime: '2024-01-02 11:00'
-  },
-  {
-    id: '3',
-    name: '王五',
-    email: 'wangwu@example.com',
-    role: 'student',
-    registerTime: '2024-01-03 12:00'
-  },
-  {
-    id: '4',
-    name: '赵六',
-    email: 'zhaoliu@example.com',
-    role: 'student',
-    registerTime: '2024-01-04 13:00'
-  },
-  {
-    id: '5',
-    name: '孙七',
-    email: 'sunqi@example.com',
-    role: 'teacher',
-    registerTime: '2024-01-05 14:00'
-  }
-])
+// 用户数据
+const users = ref<any[]>([])
 
 // 筛选后的用户
 const filteredUsers = computed(() => {
@@ -114,6 +80,17 @@ const filteredUsers = computed(() => {
     return matchesRole && matchesKeyword
   })
 })
+
+// 获取用户列表
+const fetchUsers = async () => {
+  try {
+    const response = await api.users.getList()
+    users.value = response
+  } catch (error: any) {
+    console.error('获取用户列表失败:', error)
+    ElMessage.error('获取用户列表失败')
+  }
+}
 
 // 搜索用户
 const handleSearch = () => {
@@ -132,10 +109,29 @@ const editUser = (userId: string) => {
 }
 
 // 删除用户
-const deleteUser = (userId: string) => {
-  // 实际项目中这里会弹出确认框
-  ElMessage.info(`删除用户：${userId}`)
+const deleteUser = async (userId: string) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这个用户吗？', '删除确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    await api.users.delete(userId)
+    ElMessage.success('删除成功')
+    // 重新获取用户列表
+    await fetchUsers()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
+  }
 }
+
+// 页面加载时获取用户列表
+onMounted(() => {
+  fetchUsers()
+})
 </script>
 
 <style scoped>
