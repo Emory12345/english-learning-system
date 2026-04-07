@@ -213,7 +213,15 @@ const handleRegister = async () => {
             email: registerForm.email,
             password: registerForm.password,
             confirmPassword: registerForm.confirmPassword,
-            role: registerForm.role
+            role: registerForm.role,
+            // 教师专用字段
+            username: registerForm.username,
+            gender: registerForm.gender,
+            subject: registerForm.subject,
+            education: registerForm.education,
+            experience: registerForm.experience,
+            introduction: registerForm.introduction,
+            certificate: registerForm.certificate
           })
           
           // 注册成功
@@ -235,8 +243,9 @@ const handleRegister = async () => {
 .register-container {
   display: flex;
   justify-content: center;
-  align-items: center;
-  height: 100vh;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 20px 0;
   background-color: #f0f2f5;
 }
 
@@ -246,6 +255,28 @@ const handleRegister = async () => {
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  max-height: 90vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #409EFF #f0f2f5;
+}
+
+.register-form-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.register-form-wrapper::-webkit-scrollbar-track {
+  background: #f0f2f5;
+  border-radius: 3px;
+}
+
+.register-form-wrapper::-webkit-scrollbar-thumb {
+  background: #409EFF;
+  border-radius: 3px;
+}
+
+.register-form-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #66b1ff;
 }
 
 .register-form-wrapper h2 {
