@@ -53,7 +53,7 @@ public class CommunityController {
     @GetMapping("/posts")
     public List<Post> getPosts() {
         // 按置顶状态和创建时间排序，置顶的在前
-        return postRepository.findAll(Sort.by(Sort.Order.desc("isTop"), Sort.Order.desc("createdAt")));
+        return postRepository.findAll(Sort.by(Sort.Order.desc("top"), Sort.Order.desc("createdAt")));
     }
 
     @GetMapping("/posts/{postId}")
@@ -114,7 +114,7 @@ public class CommunityController {
         }
 
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
-        post.setTop(data.get("isTop"));
+        post.setTop(data.get("top"));
         postRepository.save(post);
 
         Map<String, String> response = new java.util.HashMap<>();

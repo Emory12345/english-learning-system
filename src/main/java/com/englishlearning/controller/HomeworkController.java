@@ -10,6 +10,7 @@ import com.englishlearning.service.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
 
@@ -237,7 +238,11 @@ public class HomeworkController {
     }
 
     @DeleteMapping("/delete/{id}")
+    @Transactional
     public Map<String, String> deleteHomework(@PathVariable Long id) {
+        // 先删除相关的作业提交
+        homeworkSubmissionRepository.deleteByHomeworkId(id);
+        // 然后删除作业
         homeworkRepository.deleteById(id);
         Map<String, String> response = new java.util.HashMap<>();
         response.put("message", "Homework deleted successfully");

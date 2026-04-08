@@ -32,5 +32,5 @@ public class Post {
 
     private int collectCount = 0;
 
-    private boolean isTop = false;
+    private boolean top = false;
 }
