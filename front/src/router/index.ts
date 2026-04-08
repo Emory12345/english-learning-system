@@ -191,6 +191,11 @@ const routes: RouteRecordRaw[] = [
         path: 'system-settings',
         name: 'SystemSettings',
         component: () => import('../views/admin/SystemSettings.vue')
+      },
+      {
+        path: 'community',
+        name: 'AdminCommunity',
+        component: () => import('../views/admin/Community.vue')
       }
     ]
   },

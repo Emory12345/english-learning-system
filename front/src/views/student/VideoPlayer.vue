@@ -126,7 +126,48 @@ const getCurrentChapterVideo = () => {
 // 播放当前章节的视频
 const playChapter = (chapter: any) => {
   currentChapter.value = chapter.id
-  // 这里可以添加视频切换逻辑
+  // 保存观看历史
+  saveWatchHistory()
+}
+
+// 保存观看历史
+const saveWatchHistory = () => {
+  try {
+    console.log('Saving watch history...')
+    console.log('Course data:', course.value)
+    const historyKey = 'watchHistory'
+    let history = []
+    // 从localStorage获取现有历史
+    const existingHistory = localStorage.getItem(historyKey)
+    if (existingHistory) {
+      history = JSON.parse(existingHistory)
+      console.log('Existing history:', history)
+    }
+    // 创建新的观看记录
+    const newRecord = {
+      courseId: course.value.id,
+      courseTitle: course.value.title,
+      courseImage: course.value.image,
+      courseType: course.value.type,
+      videoUrl: course.value.videoUrl || course.value.chapters?.[0]?.videoUrl || '',
+      lastWatchTime: new Date().toISOString(),
+      currentChapter: currentChapter.value
+    }
+    console.log('New record:', newRecord)
+    // 移除已存在的相同课程记录
+    history = history.filter((item: any) => item.courseId !== course.value.id)
+    // 添加新记录到开头
+    history.unshift(newRecord)
+    // 只保留最近4条记录
+    if (history.length > 4) {
+      history = history.slice(0, 4)
+    }
+    // 保存到localStorage
+    localStorage.setItem(historyKey, JSON.stringify(history))
+    console.log('Watch history saved:', history)
+  } catch (error) {
+    console.error('Failed to save watch history:', error)
+  }
 }
 
 onMounted(async () => {
@@ -139,6 +180,8 @@ onMounted(async () => {
     if (courseData.chapters && courseData.chapters.length > 0) {
       currentChapter.value = courseData.chapters[0].id
     }
+    // 保存观看历史
+    saveWatchHistory()
   } catch (err: any) {
     error.value = err.message || '加载课程失败'
     console.error('Failed to load course:', err)

@@ -6,8 +6,20 @@
     <el-tabs v-model="activeTab">
       <el-tab-pane label="单词" name="words">
         <el-card class="module-card">
+          <div class="search-bar">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索单词..."
+              clearable
+              style="margin-bottom: 20px"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
+          </div>
           <div class="word-list">
-            <div v-for="word in words" :key="word.id" class="word-item">
+            <div v-for="word in filteredWords" :key="word.id" class="word-item">
               <div class="word-info">
                 <h3>{{ word.word }}</h3>
                 <p class="phonetic">{{ word.phonetic }}</p>
@@ -22,7 +34,7 @@
             </div>
             
             <!-- 分页组件 -->
-            <div class="pagination" v-if="totalPages > 1">
+            <div class="pagination" v-if="!searchKeyword && totalPages > 1">
               <el-pagination
                 v-model:current-page="currentPage"
                 v-model:page-size="pageSize"
@@ -47,16 +59,18 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in speakingVideos" :key="video.id" class="video-card">
+            <div v-for="video in speakingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
                 </video>
+                <div class="click-hint">点击保存到最近学习</div>
               </div>
               <div class="video-info">
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="speakingVideos.length === 0" description="暂无口语视频" />
@@ -127,16 +141,18 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in readingVideos" :key="video.id" class="video-card">
+            <div v-for="video in readingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
                 </video>
+                <div class="click-hint">点击保存到最近学习</div>
               </div>
               <div class="video-info">
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="readingVideos.length === 0" description="暂无阅读视频" />
@@ -178,16 +194,18 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in listeningVideos" :key="video.id" class="video-card">
+            <div v-for="video in listeningVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
                 </video>
+                <div class="click-hint">点击保存到最近学习</div>
               </div>
               <div class="video-info">
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="listeningVideos.length === 0" description="暂无听力视频" />
@@ -229,16 +247,18 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in writingVideos" :key="video.id" class="video-card">
+            <div v-for="video in writingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
                 </video>
+                <div class="click-hint">点击保存到最近学习</div>
               </div>
               <div class="video-info">
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="writingVideos.length === 0" description="暂无写作视频" />
@@ -320,9 +340,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Search, Upload } from '@element-plus/icons-vue'
 import { api } from '../../api'
 
 // 激活的标签页
@@ -330,9 +350,42 @@ const activeTab = ref('words')
 
 // 单词数据 - 从后端API获取
 const words = ref([])
+const allWords = ref([]) // 存储所有单词用于搜索
+const searchKeyword = ref('')
+
+// 检查是否包含中文字符
+const hasChinese = (text: string) => {
+  return /[\u4e00-\u9fa5]/.test(text)
+}
+
+// 过滤后的单词
+const filteredWords = computed(() => {
+  if (!searchKeyword.value) {
+    return words.value
+  }
+  const keyword = searchKeyword.value
+  const wordsToSearch = allWords.value.length > 0 ? allWords.value : words.value
+  if (hasChinese(keyword)) {
+    // 输入中文 → 只搜索中文释义
+    return wordsToSearch.filter((word: any) => 
+      word.chineseMeaning && word.chineseMeaning.includes(keyword)
+    )
+  } else {
+    // 输入英文 → 只搜索英文单词
+    const lowerKeyword = keyword.toLowerCase()
+    return wordsToSearch.filter((word: any) => 
+      word.word.toLowerCase().includes(lowerKeyword)
+    )
+  }
+})
 
 // 分页相关变量
 const currentPage = ref(1)
+
+// 监听搜索关键词变化，重置页码到第一页
+watch(searchKeyword, () => {
+  currentPage.value = 1
+})
 const pageSize = ref(20)
 const totalElements = ref(0)
 const totalPages = ref(0)
@@ -395,6 +448,30 @@ const removeAudio = () => {
   ElMessage.success('音频已删除')
 }
 
+// 从后端API获取所有单词（用于搜索）
+const fetchAllWords = async () => {
+  try {
+    console.log('Fetching all KaoYan words for search...')
+    const response = await fetch('http://localhost:8080/api/words/age-group/20')
+    if (!response.ok) {
+      throw new Error('Failed to fetch all KaoYan words')
+    }
+    const data = await response.json()
+    const formattedWords = data.map((word: any) => ({
+      id: word.id,
+      word: word.word,
+      phonetic: word.phonetic,
+      definition: word.meaning,
+      chineseMeaning: word.chineseMeaning,
+      example: word.example
+    }))
+    allWords.value = formattedWords
+    console.log('All KaoYan words loaded:', allWords.value.length)
+  } catch (error) {
+    console.error('Failed to fetch all KaoYan words:', error)
+  }
+}
+
 // 从后端API获取单词数据（带分页）
 const fetchWords = async () => {
   try {
@@ -434,6 +511,7 @@ const fetchWords = async () => {
 // 页面加载时获取数据
 onMounted(() => {
   fetchWords()
+  fetchAllWords()
   fetchVideos()
   fetchHomework()
   fetchMySubmissions()
@@ -512,10 +590,37 @@ const fetchVideos = async () => {
     listeningVideos.value = kaoyanVideos.filter((video: any) => video.type === '听力')
     writingVideos.value = kaoyanVideos.filter((video: any) => video.type === '写作')
     console.log('Speaking videos:', speakingVideos.value)
+    console.log('Reading videos:', readingVideos.value)
+    console.log('Listening videos:', listeningVideos.value)
+    console.log('Writing videos:', writingVideos.value)
   } catch (error) {
     console.error('Failed to fetch videos:', error)
     // 使用本地数据作为后备
     console.log('Using local video data')
+    // 添加本地测试数据
+    speakingVideos.value = [
+      {
+        id: '1',
+        title: '考研英语口语技巧',
+        description: '掌握考研英语口语的关键技巧',
+        type: '口语',
+        category: '考研英语',
+        videoUrl: '/videos/kaoyan-speaking1.mp4',
+        image: ''
+      }
+    ]
+    readingVideos.value = [
+      {
+        id: '2',
+        title: '考研英语阅读方法',
+        description: '提高考研英语阅读效率的方法',
+        type: '阅读',
+        category: '考研英语',
+        videoUrl: '/videos/kaoyan-reading1.mp4',
+        image: ''
+      }
+    ]
+    console.log('Added local test data')
   }
 }
 
@@ -584,6 +689,50 @@ const submitHomework = (homeworkId: string) => {
     submitForm.value.content = ''
     submitForm.value.audio = ''
     submitDialogVisible.value = true
+  }
+}
+
+// 处理视频点击，保存观看历史
+const handleVideoClick = (video: any) => {
+  try {
+    console.log('Handling video click:', video.title)
+    console.log('Video data:', video)
+    const historyKey = 'watchHistory'
+    let history = []
+    // 从localStorage获取现有历史
+    const existingHistory = localStorage.getItem(historyKey)
+    if (existingHistory) {
+      history = JSON.parse(existingHistory)
+      console.log('Existing history:', history)
+    }
+    // 创建新的观看记录
+    const newRecord = {
+      courseId: video.id,
+      courseTitle: video.title,
+      courseImage: video.thumbnail || video.image || '',
+      courseType: 'kaoyan',
+      videoUrl: video.videoUrl,
+      lastWatchTime: new Date().toISOString(),
+      currentChapter: '1'
+    }
+    console.log('New record:', newRecord)
+    // 移除已存在的相同视频记录
+    history = history.filter((item: any) => item.courseId !== video.id)
+    // 添加新记录到开头
+    history.unshift(newRecord)
+    // 只保留最近4条记录
+    if (history.length > 4) {
+      history = history.slice(0, 4)
+    }
+    // 保存到localStorage
+    localStorage.setItem(historyKey, JSON.stringify(history))
+    console.log('Watch history saved for video:', video.title)
+    console.log('Updated history:', history)
+    // 显示成功消息
+    ElMessage.success('已添加到最近学习')
+  } catch (error) {
+    console.error('Failed to save watch history:', error)
+    ElMessage.error('保存失败，请重试')
   }
 }
 
@@ -711,6 +860,18 @@ const confirmSubmit = async () => {
 .video-thumbnail {
   position: relative;
   height: 180px;
+}
+
+.click-hint {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(64, 158, 255, 0.9);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 10;
 }
 
 .video-thumbnail img {

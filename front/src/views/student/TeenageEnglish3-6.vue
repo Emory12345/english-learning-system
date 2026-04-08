@@ -37,7 +37,7 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in animationVideos" :key="video.id" class="video-card">
+            <div v-for="video in animationVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
@@ -47,6 +47,7 @@
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="animationVideos.length === 0" description="暂无动画教学视频" />
@@ -118,7 +119,7 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in dialogueVideos" :key="video.id" class="video-card">
+            <div v-for="video in dialogueVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
@@ -128,6 +129,7 @@
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="dialogueVideos.length === 0" description="暂无对话视频" />
@@ -247,9 +249,25 @@ import { ref, onMounted } from 'vue'
 import { VideoPlay } from '@element-plus/icons-vue'
 import { api } from '../../api'
 import { ElMessage } from 'element-plus'
+import { useWatchHistory } from '../../composables/useWatchHistory'
 
 // 激活的标签页
 const activeTab = ref('words')
+
+// 最近学习功能
+const { saveWatchHistory } = useWatchHistory()
+
+// 处理视频点击，保存到最近学习
+const handleVideoClick = (video: any) => {
+  console.log('Saving video to watch history:', video)
+  try {
+    saveWatchHistory(video, 'teenage3-6')
+    ElMessage.success('已添加到最近学习')
+  } catch (error) {
+    console.error('Failed to save watch history:', error)
+    ElMessage.error('保存失败，请重试')
+  }
+}
 
 // 单词数据 - 使用WordService中的单词列表
 const words = ref([

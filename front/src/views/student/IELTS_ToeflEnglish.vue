@@ -10,8 +10,20 @@
           <el-tabs v-model="activeTab">
             <el-tab-pane label="单词" name="words">
               <el-card class="module-card">
+                <div class="search-bar">
+                  <el-input
+                    v-model="ieltsSearchKeyword"
+                    placeholder="搜索单词..."
+                    clearable
+                    style="margin-bottom: 20px"
+                  >
+                    <template #prefix>
+                      <el-icon><Search /></el-icon>
+                    </template>
+                  </el-input>
+                </div>
                 <div class="word-list">
-                  <div v-for="word in ieltsWords" :key="word.id" class="word-item">
+                  <div v-for="word in filteredIeltsWords" :key="word.id" class="word-item">
                     <div class="word-info">
                       <h3>{{ word.word }}</h3>
                       <p class="phonetic">{{ word.phonetic }}</p>
@@ -26,7 +38,7 @@
                   </div>
                   
                   <!-- 雅思分页组件 -->
-                  <div class="pagination" v-if="ieltsTotalPages > 1">
+                  <div class="pagination" v-if="!ieltsSearchKeyword && ieltsTotalPages > 1">
                     <el-pagination
                       v-model:current-page="ieltsCurrentPage"
                       v-model:page-size="ieltsPageSize"
@@ -51,7 +63,7 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in ieltsSpeakingVideos" :key="video.id" class="video-card">
+            <div v-for="video in ieltsSpeakingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
@@ -61,6 +73,7 @@
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="ieltsSpeakingVideos.length === 0" description="暂无口语视频" />
@@ -132,7 +145,7 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in ieltsReadingVideos" :key="video.id" class="video-card">
+            <div v-for="video in ieltsReadingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
@@ -142,6 +155,7 @@
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="ieltsReadingVideos.length === 0" description="暂无阅读视频" />
@@ -165,8 +179,38 @@
                   <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
                 </div>
                 <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
+                
+                <!-- 已提交作业信息 -->
+                <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
+                  <el-divider />
+                  <h5>我的提交：</h5>
+                  <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
+                  <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
+                    <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
+                  </div>
+                  <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
+                  
+                  <!-- 批改结果 -->
+                  <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
+                    <h5>批改结果：</h5>
+                    <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
+                    <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
+                  </div>
+                </div>
               </div>
-              <el-button type="primary" size="small" @click="submitHomework(homework.id)">提交作业</el-button>
+              <div class="homework-actions">
+                <el-button 
+                  v-if="!getSubmissionForHomework(homework.id)" 
+                  type="primary" 
+                  size="small" 
+                  @click="submitHomework(homework.id)"
+                >
+                  提交作业
+                </el-button>
+                <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
+                  {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
+                </el-tag>
+              </div>
             </div>
             <el-empty v-if="ieltsReadingHomework.length === 0" description="暂无阅读作业" />
           </div>
@@ -183,7 +227,7 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in ieltsListeningVideos" :key="video.id" class="video-card">
+            <div v-for="video in ieltsListeningVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
@@ -193,6 +237,7 @@
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="ieltsListeningVideos.length === 0" description="暂无听力视频" />
@@ -216,8 +261,38 @@
                   <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
                 </div>
                 <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
+                
+                <!-- 已提交作业信息 -->
+                <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
+                  <el-divider />
+                  <h5>我的提交：</h5>
+                  <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
+                  <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
+                    <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
+                  </div>
+                  <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
+                  
+                  <!-- 批改结果 -->
+                  <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
+                    <h5>批改结果：</h5>
+                    <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
+                    <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
+                  </div>
+                </div>
               </div>
-              <el-button type="primary" size="small" @click="submitHomework(homework.id)">提交作业</el-button>
+              <div class="homework-actions">
+                <el-button 
+                  v-if="!getSubmissionForHomework(homework.id)" 
+                  type="primary" 
+                  size="small" 
+                  @click="submitHomework(homework.id)"
+                >
+                  提交作业
+                </el-button>
+                <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
+                  {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
+                </el-tag>
+              </div>
             </div>
             <el-empty v-if="ieltsListeningHomework.length === 0" description="暂无听力作业" />
           </div>
@@ -234,7 +309,7 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in ieltsWritingVideos" :key="video.id" class="video-card">
+            <div v-for="video in ieltsWritingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
@@ -244,6 +319,7 @@
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="ieltsWritingVideos.length === 0" description="暂无写作视频" />
@@ -267,8 +343,38 @@
                   <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
                 </div>
                 <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
+                
+                <!-- 已提交作业信息 -->
+                <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
+                  <el-divider />
+                  <h5>我的提交：</h5>
+                  <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
+                  <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
+                    <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
+                  </div>
+                  <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
+                  
+                  <!-- 批改结果 -->
+                  <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
+                    <h5>批改结果：</h5>
+                    <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
+                    <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
+                  </div>
+                </div>
               </div>
-              <el-button type="primary" size="small" @click="submitHomework(homework.id)">提交作业</el-button>
+              <div class="homework-actions">
+                <el-button 
+                  v-if="!getSubmissionForHomework(homework.id)" 
+                  type="primary" 
+                  size="small" 
+                  @click="submitHomework(homework.id)"
+                >
+                  提交作业
+                </el-button>
+                <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
+                  {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
+                </el-tag>
+              </div>
             </div>
             <el-empty v-if="ieltsWritingHomework.length === 0" description="暂无写作作业" />
           </div>
@@ -284,8 +390,20 @@
           <el-tabs v-model="activeTab">
             <el-tab-pane label="单词" name="words">
               <el-card class="module-card">
+                <div class="search-bar">
+                  <el-input
+                    v-model="toeflSearchKeyword"
+                    placeholder="搜索单词..."
+                    clearable
+                    style="margin-bottom: 20px"
+                  >
+                    <template #prefix>
+                      <el-icon><Search /></el-icon>
+                    </template>
+                  </el-input>
+                </div>
                 <div class="word-list">
-                  <div v-for="word in toeflWords" :key="word.id" class="word-item">
+                  <div v-for="word in filteredToeflWords" :key="word.id" class="word-item">
                     <div class="word-info">
                       <h3>{{ word.word }}</h3>
                       <p class="phonetic">{{ word.phonetic }}</p>
@@ -300,7 +418,7 @@
                   </div>
                   
                   <!-- 托福分页组件 -->
-                  <div class="pagination" v-if="toeflTotalPages > 1">
+                  <div class="pagination" v-if="!toeflSearchKeyword && toeflTotalPages > 1">
                     <el-pagination
                       v-model:current-page="toeflCurrentPage"
                       v-model:page-size="toeflPageSize"
@@ -325,7 +443,7 @@
                   </div>
                 </template>
                 <div class="video-grid">
-                  <div v-for="video in toeflSpeakingVideos" :key="video.id" class="video-card">
+                  <div v-for="video in toeflSpeakingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
                     <div class="video-thumbnail">
                       <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                         您的浏览器不支持视频播放
@@ -335,6 +453,7 @@
                       <h4>{{ video.title }}</h4>
                       <p>{{ video.description }}</p>
                       <p class="video-type">类型: {{ video.type }}</p>
+                      <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
                     </div>
                   </div>
                   <el-empty v-if="toeflSpeakingVideos.length === 0" description="暂无口语视频" />
@@ -358,8 +477,38 @@
                         <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
                       </div>
                       <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
+                      
+                      <!-- 已提交作业信息 -->
+                      <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
+                        <el-divider />
+                        <h5>我的提交：</h5>
+                        <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
+                        <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
+                          <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
+                        </div>
+                        <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
+                        
+                        <!-- 批改结果 -->
+                        <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
+                          <h5>批改结果：</h5>
+                          <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
+                          <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
+                        </div>
+                      </div>
                     </div>
-                    <el-button type="primary" size="small" @click="submitHomework(homework.id)">提交作业</el-button>
+                    <div class="homework-actions">
+                      <el-button 
+                        v-if="!getSubmissionForHomework(homework.id)" 
+                        type="primary" 
+                        size="small" 
+                        @click="submitHomework(homework.id)"
+                      >
+                        提交作业
+                      </el-button>
+                      <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
+                        {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
+                      </el-tag>
+                    </div>
                   </div>
                   <el-empty v-if="toeflSpeakingHomework.length === 0" description="暂无口语作业" />
                 </div>
@@ -376,7 +525,7 @@
                   </div>
                 </template>
                 <div class="video-grid">
-                  <div v-for="video in toeflReadingVideos" :key="video.id" class="video-card">
+                  <div v-for="video in toeflReadingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
                     <div class="video-thumbnail">
                       <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                         您的浏览器不支持视频播放
@@ -386,6 +535,7 @@
                       <h4>{{ video.title }}</h4>
                       <p>{{ video.description }}</p>
                       <p class="video-type">类型: {{ video.type }}</p>
+                      <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
                     </div>
                   </div>
                   <el-empty v-if="toeflReadingVideos.length === 0" description="暂无阅读视频" />
@@ -409,8 +559,38 @@
                         <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
                       </div>
                       <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
+                      
+                      <!-- 已提交作业信息 -->
+                      <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
+                        <el-divider />
+                        <h5>我的提交：</h5>
+                        <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
+                        <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
+                          <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
+                        </div>
+                        <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
+                        
+                        <!-- 批改结果 -->
+                        <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
+                          <h5>批改结果：</h5>
+                          <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
+                          <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
+                        </div>
+                      </div>
                     </div>
-                    <el-button type="primary" size="small" @click="submitHomework(homework.id)">提交作业</el-button>
+                    <div class="homework-actions">
+                      <el-button 
+                        v-if="!getSubmissionForHomework(homework.id)" 
+                        type="primary" 
+                        size="small" 
+                        @click="submitHomework(homework.id)"
+                      >
+                        提交作业
+                      </el-button>
+                      <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
+                        {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
+                      </el-tag>
+                    </div>
                   </div>
                   <el-empty v-if="toeflReadingHomework.length === 0" description="暂无阅读作业" />
                 </div>
@@ -427,7 +607,7 @@
                   </div>
                 </template>
                 <div class="video-grid">
-                  <div v-for="video in toeflListeningVideos" :key="video.id" class="video-card">
+                  <div v-for="video in toeflListeningVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
                     <div class="video-thumbnail">
                       <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                         您的浏览器不支持视频播放
@@ -437,6 +617,7 @@
                       <h4>{{ video.title }}</h4>
                       <p>{{ video.description }}</p>
                       <p class="video-type">类型: {{ video.type }}</p>
+                      <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
                     </div>
                   </div>
                   <el-empty v-if="toeflListeningVideos.length === 0" description="暂无听力视频" />
@@ -460,8 +641,38 @@
                         <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
                       </div>
                       <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
+                      
+                      <!-- 已提交作业信息 -->
+                      <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
+                        <el-divider />
+                        <h5>我的提交：</h5>
+                        <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
+                        <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
+                          <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
+                        </div>
+                        <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
+                        
+                        <!-- 批改结果 -->
+                        <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
+                          <h5>批改结果：</h5>
+                          <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
+                          <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
+                        </div>
+                      </div>
                     </div>
-                    <el-button type="primary" size="small" @click="submitHomework(homework.id)">提交作业</el-button>
+                    <div class="homework-actions">
+                      <el-button 
+                        v-if="!getSubmissionForHomework(homework.id)" 
+                        type="primary" 
+                        size="small" 
+                        @click="submitHomework(homework.id)"
+                      >
+                        提交作业
+                      </el-button>
+                      <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
+                        {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
+                      </el-tag>
+                    </div>
                   </div>
                   <el-empty v-if="toeflListeningHomework.length === 0" description="暂无听力作业" />
                 </div>
@@ -478,7 +689,7 @@
                   </div>
                 </template>
                 <div class="video-grid">
-                  <div v-for="video in toeflWritingVideos" :key="video.id" class="video-card">
+                  <div v-for="video in toeflWritingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
                     <div class="video-thumbnail">
                       <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                         您的浏览器不支持视频播放
@@ -488,6 +699,7 @@
                       <h4>{{ video.title }}</h4>
                       <p>{{ video.description }}</p>
                       <p class="video-type">类型: {{ video.type }}</p>
+                      <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
                     </div>
                   </div>
                   <el-empty v-if="toeflWritingVideos.length === 0" description="暂无写作视频" />
@@ -511,8 +723,38 @@
                         <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
                       </div>
                       <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
+                      
+                      <!-- 已提交作业信息 -->
+                      <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
+                        <el-divider />
+                        <h5>我的提交：</h5>
+                        <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
+                        <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
+                          <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
+                        </div>
+                        <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
+                        
+                        <!-- 批改结果 -->
+                        <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
+                          <h5>批改结果：</h5>
+                          <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
+                          <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
+                        </div>
+                      </div>
                     </div>
-                    <el-button type="primary" size="small" @click="submitHomework(homework.id)">提交作业</el-button>
+                    <div class="homework-actions">
+                      <el-button 
+                        v-if="!getSubmissionForHomework(homework.id)" 
+                        type="primary" 
+                        size="small" 
+                        @click="submitHomework(homework.id)"
+                      >
+                        提交作业
+                      </el-button>
+                      <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
+                        {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
+                      </el-tag>
+                    </div>
                   </div>
                   <el-empty v-if="toeflWritingHomework.length === 0" description="暂无写作作业" />
                 </div>
@@ -576,9 +818,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { api } from '../../api/index'
 import { ElMessage } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 
 // 激活的等级（IELTS或TOEFL）
 const activeLevel = ref('IELTS')
@@ -588,6 +831,8 @@ const activeTab = ref('words')
 
 // 雅思单词数据
 const ieltsWords = ref([])
+const ieltsAllWords = ref([]) // 存储所有雅思单词用于搜索
+const ieltsSearchKeyword = ref('')
 const ieltsCurrentPage = ref(1)
 const ieltsPageSize = ref(20)
 const ieltsTotalElements = ref(0)
@@ -595,13 +840,70 @@ const ieltsTotalPages = ref(0)
 
 // 托福单词数据
 const toeflWords = ref([])
+const toeflAllWords = ref([]) // 存储所有托福单词用于搜索
+const toeflSearchKeyword = ref('')
 const toeflCurrentPage = ref(1)
 const toeflPageSize = ref(20)
 const toeflTotalElements = ref(0)
 const toeflTotalPages = ref(0)
 
+// 检查是否包含中文字符
+const hasChinese = (text: string) => {
+  return /[\u4e00-\u9fa5]/.test(text)
+}
+
+// 过滤后的单词
+const filteredIeltsWords = computed(() => {
+  if (!ieltsSearchKeyword.value) {
+    return ieltsWords.value
+  }
+  const keyword = ieltsSearchKeyword.value
+  const wordsToSearch = ieltsAllWords.value.length > 0 ? ieltsAllWords.value : ieltsWords.value
+  if (hasChinese(keyword)) {
+    // 输入中文 → 只搜索中文释义
+    return wordsToSearch.filter((word: any) => 
+      word.chineseMeaning && word.chineseMeaning.includes(keyword)
+    )
+  } else {
+    // 输入英文 → 只搜索英文单词
+    const lowerKeyword = keyword.toLowerCase()
+    return wordsToSearch.filter((word: any) => 
+      word.word.toLowerCase().includes(lowerKeyword)
+    )
+  }
+})
+
+const filteredToeflWords = computed(() => {
+  if (!toeflSearchKeyword.value) {
+    return toeflWords.value
+  }
+  const keyword = toeflSearchKeyword.value
+  const wordsToSearch = toeflAllWords.value.length > 0 ? toeflAllWords.value : toeflWords.value
+  if (hasChinese(keyword)) {
+    // 输入中文 → 只搜索中文释义
+    return wordsToSearch.filter((word: any) => 
+      word.chineseMeaning && word.chineseMeaning.includes(keyword)
+    )
+  } else {
+    // 输入英文 → 只搜索英文单词
+    const lowerKeyword = keyword.toLowerCase()
+    return wordsToSearch.filter((word: any) => 
+      word.word.toLowerCase().includes(lowerKeyword)
+    )
+  }
+})
+
 // 加载状态
 const loading = ref(false)
+
+// 监听搜索关键词变化，重置页码到第一页
+watch(ieltsSearchKeyword, () => {
+  ieltsCurrentPage.value = 1
+})
+
+watch(toeflSearchKeyword, () => {
+  toeflCurrentPage.value = 1
+})
 
 // 雅思视频数据
 const ieltsSpeakingVideos = ref<any[]>([])
@@ -634,6 +936,30 @@ const submitForm = ref({ title: '', content: '', audio: '' })
 const submitting = ref(false)
 const currentHomeworkId = ref('')
 const fileList = ref([])
+
+// 从后端API获取所有雅思单词（用于搜索）
+const fetchAllIeltsWords = async () => {
+  try {
+    console.log('Fetching all IELTS words for search...')
+    const response = await fetch('http://localhost:8080/api/words/age-group/21')
+    if (!response.ok) {
+      throw new Error('Failed to fetch all IELTS words')
+    }
+    const data = await response.json()
+    const formattedWords = data.map((word: any) => ({
+      id: word.id,
+      word: word.word,
+      phonetic: word.phonetic,
+      definition: word.meaning,
+      chineseMeaning: word.chineseMeaning,
+      example: word.example
+    }))
+    ieltsAllWords.value = formattedWords
+    console.log('All IELTS words loaded:', ieltsAllWords.value.length)
+  } catch (error) {
+    console.error('Failed to fetch all IELTS words:', error)
+  }
+}
 
 // 从后端API获取雅思单词数据（带分页）
 const fetchIeltsWords = async () => {
@@ -713,10 +1039,36 @@ const fetchToeflWords = async () => {
   }
 }
 
+// 从后端API获取所有托福单词（用于搜索）
+const fetchAllToeflWords = async () => {
+  try {
+    console.log('Fetching all TOEFL words for search...')
+    const response = await fetch('http://localhost:8080/api/words/age-group/22')
+    if (!response.ok) {
+      throw new Error('Failed to fetch all TOEFL words')
+    }
+    const data = await response.json()
+    const formattedWords = data.map((word: any) => ({
+      id: word.id,
+      word: word.word,
+      phonetic: word.phonetic,
+      definition: word.meaning,
+      chineseMeaning: word.chineseMeaning,
+      example: word.example
+    }))
+    toeflAllWords.value = formattedWords
+    console.log('All TOEFL words loaded:', toeflAllWords.value.length)
+  } catch (error) {
+    console.error('Failed to fetch all TOEFL words:', error)
+  }
+}
+
 // 页面加载时获取数据
 onMounted(() => {
   fetchIeltsWords()
   fetchToeflWords()
+  fetchAllIeltsWords()
+  fetchAllToeflWords()
   fetchVideos()
   fetchHomework()
   fetchMySubmissions()
@@ -748,7 +1100,26 @@ const handleToeflCurrentChange = (current: number) => {
 
 // 播放发音
 const playAudio = (wordId: string) => {
-  console.log('Playing audio for word:', wordId)
+  // 在雅思和托福单词列表中查找单词
+  let word = ieltsWords.value.find((w: any) => w.id === wordId)
+  if (!word) {
+    word = toeflWords.value.find((w: any) => w.id === wordId)
+  }
+  // 如果还没找到，在所有单词列表中查找
+  if (!word) {
+    word = ieltsAllWords.value.find((w: any) => w.id === wordId)
+  }
+  if (!word) {
+    word = toeflAllWords.value.find((w: any) => w.id === wordId)
+  }
+  if (word && 'speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(word.word)
+    utterance.lang = 'en-US'
+    utterance.rate = 0.8
+    window.speechSynthesis.speak(utterance)
+  } else {
+    console.log('Browser does not support speech synthesis')
+  }
 }
 
 // 添加到学习列表
@@ -940,11 +1311,57 @@ const confirmSubmit = async () => {
     console.log('作业提交成功:', response)
     ElMessage.success('作业提交成功')
     submitDialogVisible.value = false
+    // 提交成功后重新加载学生的提交列表
+    await fetchMySubmissions()
   } catch (error: any) {
     console.error('作业提交失败:', error)
     ElMessage.error(error.message || '提交失败')
   } finally {
     submitting.value = false
+  }
+}
+
+// 处理视频点击，保存观看历史
+const handleVideoClick = (video: any) => {
+  try {
+    console.log('Handling video click:', video.title)
+    console.log('Video data:', video)
+    const historyKey = 'watchHistory'
+    let history = []
+    // 从localStorage获取现有历史
+    const existingHistory = localStorage.getItem(historyKey)
+    if (existingHistory) {
+      history = JSON.parse(existingHistory)
+      console.log('Existing history:', history)
+    }
+    // 创建新的观看记录
+    const newRecord = {
+      courseId: video.id,
+      courseTitle: video.title,
+      courseImage: video.thumbnail || video.image || '',
+      courseType: video.category === '雅思' ? 'ielts' : 'toefl',
+      videoUrl: video.videoUrl,
+      lastWatchTime: new Date().toISOString(),
+      currentChapter: '1'
+    }
+    console.log('New record:', newRecord)
+    // 移除已存在的相同视频记录
+    history = history.filter((item: any) => item.courseId !== video.id)
+    // 添加新记录到开头
+    history.unshift(newRecord)
+    // 只保留最近4条记录
+    if (history.length > 4) {
+      history = history.slice(0, 4)
+    }
+    // 保存到localStorage
+    localStorage.setItem(historyKey, JSON.stringify(history))
+    console.log('Watch history saved for video:', video.title)
+    console.log('Updated history:', history)
+    // 显示成功消息
+    ElMessage.success('已添加到最近学习')
+  } catch (error) {
+    console.error('Failed to save watch history:', error)
+    ElMessage.error('保存失败，请重试')
   }
 }
 </script>
@@ -1105,6 +1522,18 @@ const confirmSubmit = async () => {
 .video-thumbnail {
   position: relative;
   height: 180px;
+}
+
+.click-hint {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(64, 158, 255, 0.9);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 10;
 }
 
 .video-thumbnail img {

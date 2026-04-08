@@ -212,9 +212,9 @@ export const api = {
     deletePost: (postId: string) => request<{ message: string }>(`/community/posts/${postId}`, {
       method: 'DELETE',
     }),
-    toggleTopPost: (postId: string, isTop: boolean) => request<{ message: string }>(`/community/posts/${postId}/top`, {
+    toggleTopPost: (postId: string, top: boolean) => request<{ message: string }>(`/community/posts/${postId}/top`, {
       method: 'PUT',
-      body: JSON.stringify({ isTop }),
+      body: JSON.stringify({ top }),
     }),
     getComments: (postId: string) => request<any[]>(`/community/posts/${postId}/comments`),
     createComment: (postId: string, content: string, parentId?: string) => request<any>(`/community/posts/${postId}/comments`, {

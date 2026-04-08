@@ -13,8 +13,20 @@
               <el-tag type="success">进阶阶段</el-tag>
             </div>
           </template>
+          <div class="search-bar">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索单词..."
+              clearable
+              style="margin-bottom: 20px"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
+          </div>
           <div class="word-list">
-            <div v-for="word in words" :key="word.id" class="word-item">
+            <div v-for="word in filteredWords" :key="word.id" class="word-item">
               <div class="word-info">
                 <h3>{{ word.word }}</h3>
                 <p class="phonetic">{{ word.phonetic }}</p>
@@ -29,7 +41,7 @@
             </div>
             
             <!-- 分页组件 -->
-            <div class="pagination" v-if="totalPages > 1">
+            <div class="pagination" v-if="!searchKeyword && totalPages > 1">
               <el-pagination
                 v-model:current-page="currentPage"
                 v-model:page-size="pageSize"
@@ -54,7 +66,7 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in speakingVideos" :key="video.id" class="video-card">
+            <div v-for="video in speakingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
@@ -64,6 +76,7 @@
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="speakingVideos.length === 0" description="暂无口语视频" />
@@ -135,7 +148,7 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in readingVideos" :key="video.id" class="video-card">
+            <div v-for="video in readingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
@@ -145,6 +158,7 @@
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="readingVideos.length === 0" description="暂无阅读视频" />
@@ -186,7 +200,7 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in listeningVideos" :key="video.id" class="video-card">
+            <div v-for="video in listeningVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
@@ -196,6 +210,7 @@
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="listeningVideos.length === 0" description="暂无听力视频" />
@@ -237,7 +252,7 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in writingVideos" :key="video.id" class="video-card">
+            <div v-for="video in writingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
@@ -247,6 +262,7 @@
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="writingVideos.length === 0" description="暂无写作视频" />
@@ -332,18 +348,68 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 import { api } from '../../api'
+import { useWatchHistory } from '../../composables/useWatchHistory'
 
 // 激活的标签页
 const activeTab = ref('words')
 
+// 最近学习功能
+const { saveWatchHistory } = useWatchHistory()
+
+// 处理视频点击，保存到最近学习
+const handleVideoClick = (video: any) => {
+  console.log('Saving video to watch history:', video)
+  try {
+    saveWatchHistory(video, 'teenage15-18')
+    ElMessage.success('已添加到最近学习')
+  } catch (error) {
+    console.error('Failed to save watch history:', error)
+    ElMessage.error('保存失败，请重试')
+  }
+}
+
 // 单词数据 - 从后端API获取
 const words = ref([])
+const allWords = ref([]) // 存储所有单词用于搜索
+const searchKeyword = ref('')
+
+// 检查是否包含中文字符
+const hasChinese = (text: string) => {
+  return /[\u4e00-\u9fa5]/.test(text)
+}
+
+// 过滤后的单词
+const filteredWords = computed(() => {
+  if (!searchKeyword.value) {
+    return words.value
+  }
+  const keyword = searchKeyword.value
+  const wordsToSearch = allWords.value.length > 0 ? allWords.value : words.value
+  if (hasChinese(keyword)) {
+    // 输入中文 → 只搜索中文释义
+    return wordsToSearch.filter((word: any) => 
+      word.chineseMeaning && word.chineseMeaning.includes(keyword)
+    )
+  } else {
+    // 输入英文 → 只搜索英文单词
+    const lowerKeyword = keyword.toLowerCase()
+    return wordsToSearch.filter((word: any) => 
+      word.word.toLowerCase().includes(lowerKeyword)
+    )
+  }
+})
 
 // 分页相关变量
 const currentPage = ref(1)
+
+// 监听搜索关键词变化，重置页码到第一页
+watch(searchKeyword, () => {
+  currentPage.value = 1
+})
 const pageSize = ref(20)
 const totalElements = ref(0)
 const totalPages = ref(0)
@@ -369,6 +435,30 @@ const submitForm = ref({ title: '', content: '', audio: '' })
 const submitting = ref(false)
 const currentHomeworkId = ref('')
 const fileList = ref([])
+
+// 从后端API获取所有单词（用于搜索）
+const fetchAllWords = async () => {
+  try {
+    console.log('Fetching all Teenage 15-18 words for search...')
+    const response = await fetch('http://localhost:8080/api/words/age-group/15')
+    if (!response.ok) {
+      throw new Error('Failed to fetch all Teenage 15-18 words')
+    }
+    const data = await response.json()
+    const formattedWords = data.map((word: any) => ({
+      id: word.id,
+      word: word.word,
+      phonetic: word.phonetic,
+      definition: word.meaning,
+      chineseMeaning: word.chineseMeaning,
+      example: word.example
+    }))
+    allWords.value = formattedWords
+    console.log('All Teenage 15-18 words loaded:', allWords.value.length)
+  } catch (error) {
+    console.error('Failed to fetch all Teenage 15-18 words:', error)
+  }
+}
 
 // 从后端API获取单词数据（带分页）
 const fetchWords = async () => {
@@ -477,6 +567,7 @@ const getSubmissionForHomework = (homeworkId: any) => {
 // 页面加载时获取数据
 onMounted(() => {
   fetchWords()
+  fetchAllWords()
   fetchVideos()
   fetchHomework()
   fetchMySubmissions()

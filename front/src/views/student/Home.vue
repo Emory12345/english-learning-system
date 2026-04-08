@@ -54,22 +54,31 @@
       <template #header>
         <div class="card-header">
           <span>最近学习</span>
+          <el-button type="danger" size="small" @click="clearWatchHistory">清理历史</el-button>
         </div>
       </template>
-      <el-table :data="recentStudies" style="width: 100%">
-        <el-table-column prop="courseTitle" label="课程名称" />
-        <el-table-column label="最近学习时间">
-          <template #default="scope">
-            {{ formatTime(scope.row.lastStudyTime) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="progress" label="学习进度" />
-        <el-table-column label="操作">
-          <template #default="scope">
-            <el-button type="primary" size="small" @click="goToVideoPlayer(scope.row.courseId)">继续学习</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <div v-if="watchHistory.length > 0" class="video-list">
+        <div v-for="item in watchHistory" :key="item.courseId" class="video-item">
+          <div class="video-container">
+            <video controls width="100%" height="200px" style="border-radius: 8px;">
+              <source :src="`http://localhost:8080${item.videoUrl || item.chapterVideoUrl || ''}`" type="video/mp4">
+              您的浏览器不支持视频播放
+            </video>
+          </div>
+          <div class="video-title">
+            <h3>{{ item.courseTitle }}</h3>
+            <p style="color: #909399; font-size: 12px; margin-top: 5px;">
+              {{ formatWatchTime(item.lastWatchTime) }}
+            </p>
+            <p style="color: #606266; font-size: 12px;">
+              视频URL: {{ item.videoUrl || item.chapterVideoUrl || '无' }}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div v-else style="text-align: center; padding: 40px; color: #909399;">
+        暂无最近学习记录
+      </div>
     </el-card>
   </div>
 </template>
@@ -151,7 +160,10 @@ const overviewData = ref({
   accuracy: '0%'
 })
 
-// 最近学习数据
+// 观看历史
+const watchHistory = ref<any[]>([])
+
+// 最近学习数据（保留旧数据作为后备）
 const recentStudies = ref([
   {
     courseId: '1',
@@ -200,6 +212,80 @@ const formatTime = (time: string) => {
   if (!time) return ''
   const date = new Date(time)
   return date.toLocaleString('zh-CN')
+}
+
+// 从localStorage读取观看历史
+const fetchWatchHistory = () => {
+  try {
+    console.log('Fetching watch history from localStorage...')
+    const history = localStorage.getItem('watchHistory')
+    console.log('Raw history data:', history)
+    if (history) {
+      const parsedHistory = JSON.parse(history)
+      console.log('Parsed history:', parsedHistory)
+      watchHistory.value = parsedHistory
+      console.log('Watch history loaded:', watchHistory.value)
+    } else {
+      console.log('No watch history found in localStorage')
+    }
+  } catch (error) {
+    console.error('Failed to load watch history:', error)
+  }
+}
+
+// 清理观看历史
+const clearWatchHistory = () => {
+  try {
+    localStorage.removeItem('watchHistory')
+    watchHistory.value = []
+    console.log('Watch history cleared')
+  } catch (error) {
+    console.error('Failed to clear watch history:', error)
+  }
+}
+
+// 格式化观看时间
+const formatWatchTime = (time: string) => {
+  if (!time) return ''
+  const date = new Date(time)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  
+  if (minutes < 1) return '刚刚'
+  if (minutes < 60) return `${minutes}分钟前`
+  if (hours < 24) return `${hours}小时前`
+  if (days < 7) return `${days}天前`
+  return date.toLocaleDateString('zh-CN')
+}
+
+// 从历史记录跳转到视频播放页面
+const goToVideoPlayerFromHistory = (item: any) => {
+  // 根据课程类型和ID跳转到对应的页面
+  switch (item.courseType) {
+    case 'kaoyan':
+      router.push('/student/kaoyan-english')
+      break
+    case 'cet':
+      router.push('/student/cet-english')
+      break
+    case 'ielts-toefl':
+      router.push('/student/ielts-toefl-english')
+      break
+    case 'business':
+      router.push('/student/business-english')
+      break
+    case 'teenage-7-15':
+      router.push('/student/teenage-english-7-15')
+      break
+    case 'teenage-15-18':
+      router.push('/student/teenage-english-15-18')
+      break
+    default:
+      router.push(`/student/video-player/${item.courseId}`)
+  }
 }
 
 // 从后端获取最近学习记录
@@ -358,9 +444,15 @@ const goToExamCourses = (type: string) => {
 
 // 组件挂载时获取数据
 onMounted(() => {
+  console.log('Home component mounted, fetching data...')
+  // 先获取观看历史，确保数据在渲染前准备好
+  fetchWatchHistory()
+  
+  // 然后获取其他数据
   fetchRecommendedCourses()
   fetchStudentOverview()
-  fetchRecentStudies()
+  // 注释掉后端最近学习记录的获取，因为我们使用localStorage
+  // fetchRecentStudies()
   fetchWeeklyStudyRecords()
   
   // 添加窗口大小变化监听
@@ -478,6 +570,47 @@ onUnmounted(() => {
   font-size: 14px;
   color: #606266;
   line-height: 1.5;
+}
+
+.video-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.video-item {
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.video-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.video-container {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+
+.video-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-title {
+  padding: 15px;
+}
+
+.video-title h3 {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
 }
 
 

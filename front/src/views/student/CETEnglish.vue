@@ -10,8 +10,20 @@
           <el-tabs v-model="activeTab">
             <el-tab-pane label="单词" name="words">
               <el-card class="module-card">
+                <div class="search-bar">
+                  <el-input
+                    v-model="cet4SearchKeyword"
+                    placeholder="搜索单词..."
+                    clearable
+                    style="margin-bottom: 20px"
+                  >
+                    <template #prefix>
+                      <el-icon><Search /></el-icon>
+                    </template>
+                  </el-input>
+                </div>
                 <div class="word-list">
-                  <div v-for="word in cet4Words" :key="word.id" class="word-item">
+                  <div v-for="word in filteredCET4Words" :key="word.id" class="word-item">
                     <div class="word-info">
                       <h3>{{ word.word }}</h3>
                       <p class="phonetic">{{ word.phonetic }}</p>
@@ -26,7 +38,7 @@
                   </div>
                   
                   <!-- 四级分页组件 -->
-                  <div class="pagination" v-if="cet4TotalPages > 1">
+                  <div class="pagination" v-if="!cet4SearchKeyword && cet4TotalPages > 1">
                     <el-pagination
                       v-model:current-page="cet4CurrentPage"
                       v-model:page-size="cet4PageSize"
@@ -51,7 +63,7 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in cet4SpeakingVideos" :key="video.id" class="video-card">
+            <div v-for="video in cet4SpeakingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
@@ -61,6 +73,7 @@
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="cet4SpeakingVideos.length === 0" description="暂无口语视频" />
@@ -132,7 +145,7 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in cet4ReadingVideos" :key="video.id" class="video-card">
+            <div v-for="video in cet4ReadingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
@@ -142,6 +155,7 @@
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="cet4ReadingVideos.length === 0" description="暂无阅读视频" />
@@ -165,8 +179,38 @@
                   <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
                 </div>
                 <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
+                
+                <!-- 已提交作业信息 -->
+                <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
+                  <el-divider />
+                  <h5>我的提交：</h5>
+                  <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
+                  <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
+                    <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
+                  </div>
+                  <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
+                  
+                  <!-- 批改结果 -->
+                  <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
+                    <h5>批改结果：</h5>
+                    <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
+                    <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
+                  </div>
+                </div>
               </div>
-              <el-button type="primary" size="small" @click="submitHomework(homework.id)">提交作业</el-button>
+              <div class="homework-actions">
+                <el-button 
+                  v-if="!getSubmissionForHomework(homework.id)" 
+                  type="primary" 
+                  size="small" 
+                  @click="submitHomework(homework.id)"
+                >
+                  提交作业
+                </el-button>
+                <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
+                  {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
+                </el-tag>
+              </div>
             </div>
             <el-empty v-if="cet4ReadingHomework.length === 0" description="暂无阅读作业" />
           </div>
@@ -183,7 +227,7 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in cet4ListeningVideos" :key="video.id" class="video-card">
+            <div v-for="video in cet4ListeningVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
@@ -193,6 +237,7 @@
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="cet4ListeningVideos.length === 0" description="暂无听力视频" />
@@ -216,8 +261,38 @@
                   <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
                 </div>
                 <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
+                
+                <!-- 已提交作业信息 -->
+                <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
+                  <el-divider />
+                  <h5>我的提交：</h5>
+                  <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
+                  <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
+                    <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
+                  </div>
+                  <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
+                  
+                  <!-- 批改结果 -->
+                  <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
+                    <h5>批改结果：</h5>
+                    <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
+                    <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
+                  </div>
+                </div>
               </div>
-              <el-button type="primary" size="small" @click="submitHomework(homework.id)">提交作业</el-button>
+              <div class="homework-actions">
+                <el-button 
+                  v-if="!getSubmissionForHomework(homework.id)" 
+                  type="primary" 
+                  size="small" 
+                  @click="submitHomework(homework.id)"
+                >
+                  提交作业
+                </el-button>
+                <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
+                  {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
+                </el-tag>
+              </div>
             </div>
             <el-empty v-if="cet4ListeningHomework.length === 0" description="暂无听力作业" />
           </div>
@@ -234,7 +309,7 @@
             </div>
           </template>
           <div class="video-grid">
-            <div v-for="video in cet4WritingVideos" :key="video.id" class="video-card">
+            <div v-for="video in cet4WritingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
               <div class="video-thumbnail">
                 <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                   您的浏览器不支持视频播放
@@ -244,6 +319,7 @@
                 <h4>{{ video.title }}</h4>
                 <p>{{ video.description }}</p>
                 <p class="video-type">类型: {{ video.type }}</p>
+                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
               </div>
             </div>
             <el-empty v-if="cet4WritingVideos.length === 0" description="暂无写作视频" />
@@ -267,8 +343,38 @@
                   <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
                 </div>
                 <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
+                
+                <!-- 已提交作业信息 -->
+                <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
+                  <el-divider />
+                  <h5>我的提交：</h5>
+                  <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
+                  <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
+                    <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
+                  </div>
+                  <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
+                  
+                  <!-- 批改结果 -->
+                  <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
+                    <h5>批改结果：</h5>
+                    <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
+                    <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
+                  </div>
+                </div>
               </div>
-              <el-button type="primary" size="small" @click="submitHomework(homework.id)">提交作业</el-button>
+              <div class="homework-actions">
+                <el-button 
+                  v-if="!getSubmissionForHomework(homework.id)" 
+                  type="primary" 
+                  size="small" 
+                  @click="submitHomework(homework.id)"
+                >
+                  提交作业
+                </el-button>
+                <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
+                  {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
+                </el-tag>
+              </div>
             </div>
             <el-empty v-if="cet4WritingHomework.length === 0" description="暂无写作作业" />
           </div>
@@ -284,8 +390,20 @@
           <el-tabs v-model="activeTab">
             <el-tab-pane label="单词" name="words">
               <el-card class="module-card">
+                <div class="search-bar">
+                  <el-input
+                    v-model="cet6SearchKeyword"
+                    placeholder="搜索单词..."
+                    clearable
+                    style="margin-bottom: 20px"
+                  >
+                    <template #prefix>
+                      <el-icon><Search /></el-icon>
+                    </template>
+                  </el-input>
+                </div>
                 <div class="word-list">
-                  <div v-for="word in cet6Words" :key="word.id" class="word-item">
+                  <div v-for="word in filteredCET6Words" :key="word.id" class="word-item">
                     <div class="word-info">
                       <h3>{{ word.word }}</h3>
                       <p class="phonetic">{{ word.phonetic }}</p>
@@ -325,7 +443,7 @@
                   </div>
                 </template>
                 <div class="video-grid">
-                  <div v-for="video in cet6SpeakingVideos" :key="video.id" class="video-card">
+                  <div v-for="video in cet6SpeakingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
                     <div class="video-thumbnail">
                       <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                         您的浏览器不支持视频播放
@@ -335,6 +453,7 @@
                       <h4>{{ video.title }}</h4>
                       <p>{{ video.description }}</p>
                       <p class="video-type">类型: {{ video.type }}</p>
+                      <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
                     </div>
                   </div>
                   <el-empty v-if="cet6SpeakingVideos.length === 0" description="暂无口语视频" />
@@ -358,8 +477,38 @@
                         <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
                       </div>
                       <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
+                      
+                      <!-- 已提交作业信息 -->
+                      <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
+                        <el-divider />
+                        <h5>我的提交：</h5>
+                        <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
+                        <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
+                          <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
+                        </div>
+                        <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
+                        
+                        <!-- 批改结果 -->
+                        <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
+                          <h5>批改结果：</h5>
+                          <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
+                          <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
+                        </div>
+                      </div>
                     </div>
-                    <el-button type="primary" size="small" @click="submitHomework(homework.id)">提交作业</el-button>
+                    <div class="homework-actions">
+                      <el-button 
+                        v-if="!getSubmissionForHomework(homework.id)" 
+                        type="primary" 
+                        size="small" 
+                        @click="submitHomework(homework.id)"
+                      >
+                        提交作业
+                      </el-button>
+                      <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
+                        {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
+                      </el-tag>
+                    </div>
                   </div>
                   <el-empty v-if="cet6SpeakingHomework.length === 0" description="暂无口语作业" />
                 </div>
@@ -376,7 +525,7 @@
                   </div>
                 </template>
                 <div class="video-grid">
-                  <div v-for="video in cet6ReadingVideos" :key="video.id" class="video-card">
+                  <div v-for="video in cet6ReadingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
                     <div class="video-thumbnail">
                       <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                         您的浏览器不支持视频播放
@@ -386,6 +535,7 @@
                       <h4>{{ video.title }}</h4>
                       <p>{{ video.description }}</p>
                       <p class="video-type">类型: {{ video.type }}</p>
+                      <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
                     </div>
                   </div>
                   <el-empty v-if="cet6ReadingVideos.length === 0" description="暂无阅读视频" />
@@ -409,8 +559,38 @@
                         <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
                       </div>
                       <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
+                      
+                      <!-- 已提交作业信息 -->
+                      <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
+                        <el-divider />
+                        <h5>我的提交：</h5>
+                        <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
+                        <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
+                          <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
+                        </div>
+                        <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
+                        
+                        <!-- 批改结果 -->
+                        <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
+                          <h5>批改结果：</h5>
+                          <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
+                          <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
+                        </div>
+                      </div>
                     </div>
-                    <el-button type="primary" size="small" @click="submitHomework(homework.id)">提交作业</el-button>
+                    <div class="homework-actions">
+                      <el-button 
+                        v-if="!getSubmissionForHomework(homework.id)" 
+                        type="primary" 
+                        size="small" 
+                        @click="submitHomework(homework.id)"
+                      >
+                        提交作业
+                      </el-button>
+                      <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
+                        {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
+                      </el-tag>
+                    </div>
                   </div>
                   <el-empty v-if="cet6ReadingHomework.length === 0" description="暂无阅读作业" />
                 </div>
@@ -427,7 +607,7 @@
                   </div>
                 </template>
                 <div class="video-grid">
-                  <div v-for="video in cet6ListeningVideos" :key="video.id" class="video-card">
+                  <div v-for="video in cet6ListeningVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
                     <div class="video-thumbnail">
                       <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                         您的浏览器不支持视频播放
@@ -437,6 +617,7 @@
                       <h4>{{ video.title }}</h4>
                       <p>{{ video.description }}</p>
                       <p class="video-type">类型: {{ video.type }}</p>
+                      <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
                     </div>
                   </div>
                   <el-empty v-if="cet6ListeningVideos.length === 0" description="暂无听力视频" />
@@ -460,8 +641,38 @@
                         <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
                       </div>
                       <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
+                      
+                      <!-- 已提交作业信息 -->
+                      <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
+                        <el-divider />
+                        <h5>我的提交：</h5>
+                        <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
+                        <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
+                          <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
+                        </div>
+                        <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
+                        
+                        <!-- 批改结果 -->
+                        <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
+                          <h5>批改结果：</h5>
+                          <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
+                          <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
+                        </div>
+                      </div>
                     </div>
-                    <el-button type="primary" size="small" @click="submitHomework(homework.id)">提交作业</el-button>
+                    <div class="homework-actions">
+                      <el-button 
+                        v-if="!getSubmissionForHomework(homework.id)" 
+                        type="primary" 
+                        size="small" 
+                        @click="submitHomework(homework.id)"
+                      >
+                        提交作业
+                      </el-button>
+                      <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
+                        {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
+                      </el-tag>
+                    </div>
                   </div>
                   <el-empty v-if="cet6ListeningHomework.length === 0" description="暂无听力作业" />
                 </div>
@@ -478,7 +689,7 @@
                   </div>
                 </template>
                 <div class="video-grid">
-                  <div v-for="video in cet6WritingVideos" :key="video.id" class="video-card">
+                  <div v-for="video in cet6WritingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
                     <div class="video-thumbnail">
                       <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
                         您的浏览器不支持视频播放
@@ -488,6 +699,7 @@
                       <h4>{{ video.title }}</h4>
                       <p>{{ video.description }}</p>
                       <p class="video-type">类型: {{ video.type }}</p>
+                      <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
                     </div>
                   </div>
                   <el-empty v-if="cet6WritingVideos.length === 0" description="暂无写作视频" />
@@ -511,8 +723,38 @@
                         <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
                       </div>
                       <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
+                      
+                      <!-- 已提交作业信息 -->
+                      <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
+                        <el-divider />
+                        <h5>我的提交：</h5>
+                        <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
+                        <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
+                          <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
+                        </div>
+                        <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
+                        
+                        <!-- 批改结果 -->
+                        <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
+                          <h5>批改结果：</h5>
+                          <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
+                          <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
+                        </div>
+                      </div>
                     </div>
-                    <el-button type="primary" size="small" @click="submitHomework(homework.id)">提交作业</el-button>
+                    <div class="homework-actions">
+                      <el-button 
+                        v-if="!getSubmissionForHomework(homework.id)" 
+                        type="primary" 
+                        size="small" 
+                        @click="submitHomework(homework.id)"
+                      >
+                        提交作业
+                      </el-button>
+                      <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
+                        {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
+                      </el-tag>
+                    </div>
                   </div>
                   <el-empty v-if="cet6WritingHomework.length === 0" description="暂无写作作业" />
                 </div>
@@ -576,9 +818,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { api } from '../../api'
+import { Search } from '@element-plus/icons-vue'
 
 // 激活的等级（CET4或CET6）
 const activeLevel = ref('CET4')
@@ -588,6 +831,8 @@ const activeTab = ref('words')
 
 // 四级单词数据
 const cet4Words = ref([])
+const cet4AllWords = ref([]) // 存储所有四级单词用于搜索
+const cet4SearchKeyword = ref('')
 const cet4CurrentPage = ref(1)
 const cet4PageSize = ref(20)
 const cet4TotalElements = ref(0)
@@ -595,10 +840,67 @@ const cet4TotalPages = ref(0)
 
 // 六级单词数据
 const cet6Words = ref([])
+const cet6AllWords = ref([]) // 存储所有六级单词用于搜索
+const cet6SearchKeyword = ref('')
 const cet6CurrentPage = ref(1)
 const cet6PageSize = ref(20)
 const cet6TotalElements = ref(0)
 const cet6TotalPages = ref(0)
+
+// 检查是否包含中文字符
+const hasChinese = (text: string) => {
+  return /[\u4e00-\u9fa5]/.test(text)
+}
+
+// 过滤后的单词
+const filteredCET4Words = computed(() => {
+  if (!cet4SearchKeyword.value) {
+    return cet4Words.value
+  }
+  const keyword = cet4SearchKeyword.value
+  const wordsToSearch = cet4AllWords.value.length > 0 ? cet4AllWords.value : cet4Words.value
+  if (hasChinese(keyword)) {
+    // 输入中文 → 只搜索中文释义
+    return wordsToSearch.filter((word: any) => 
+      word.chineseMeaning && word.chineseMeaning.includes(keyword)
+    )
+  } else {
+    // 输入英文 → 只搜索英文单词
+    const lowerKeyword = keyword.toLowerCase()
+    return wordsToSearch.filter((word: any) => 
+      word.word.toLowerCase().includes(lowerKeyword)
+    )
+  }
+})
+
+const filteredCET6Words = computed(() => {
+  if (!cet6SearchKeyword.value) {
+    return cet6Words.value
+  }
+  const keyword = cet6SearchKeyword.value
+  const wordsToSearch = cet6AllWords.value.length > 0 ? cet6AllWords.value : cet6Words.value
+  if (hasChinese(keyword)) {
+    // 输入中文 → 只搜索中文释义
+    return wordsToSearch.filter((word: any) => 
+      word.chineseMeaning && word.chineseMeaning.includes(keyword)
+    )
+  } else {
+    // 输入英文 → 只搜索英文单词
+    const lowerKeyword = keyword.toLowerCase()
+    return wordsToSearch.filter((word: any) => 
+      word.word.toLowerCase().includes(lowerKeyword)
+    )
+  }
+})
+
+// 监听搜索关键词变化，重置页码到第一页
+watch(cet4SearchKeyword, () => {
+  cet4CurrentPage.value = 1
+})
+
+watch(cet6SearchKeyword, () => {
+  cet6CurrentPage.value = 1
+})
 
 // 四级视频数据
 const cet4SpeakingVideos = ref<any[]>([])
@@ -631,6 +933,54 @@ const submitForm = ref({ title: '', content: '', audio: '' })
 const submitting = ref(false)
 const currentHomeworkId = ref('')
 const fileList = ref([])
+
+// 从后端API获取所有四级单词（用于搜索）
+const fetchAllCET4Words = async () => {
+  try {
+    console.log('Fetching all CET4 words for search...')
+    const response = await fetch('http://localhost:8080/api/words/age-group/25')
+    if (!response.ok) {
+      throw new Error('Failed to fetch all CET4 words')
+    }
+    const data = await response.json()
+    const formattedWords = data.map((word: any) => ({
+      id: word.id,
+      word: word.word,
+      phonetic: word.phonetic,
+      definition: word.meaning,
+      chineseMeaning: word.chineseMeaning,
+      example: word.example
+    }))
+    cet4AllWords.value = formattedWords
+    console.log('All CET4 words loaded:', cet4AllWords.value.length)
+  } catch (error) {
+    console.error('Failed to fetch all CET4 words:', error)
+  }
+}
+
+// 从后端API获取所有六级单词（用于搜索）
+const fetchAllCET6Words = async () => {
+  try {
+    console.log('Fetching all CET6 words for search...')
+    const response = await fetch('http://localhost:8080/api/words/age-group/26')
+    if (!response.ok) {
+      throw new Error('Failed to fetch all CET6 words')
+    }
+    const data = await response.json()
+    const formattedWords = data.map((word: any) => ({
+      id: word.id,
+      word: word.word,
+      phonetic: word.phonetic,
+      definition: word.meaning,
+      chineseMeaning: word.chineseMeaning,
+      example: word.example
+    }))
+    cet6AllWords.value = formattedWords
+    console.log('All CET6 words loaded:', cet6AllWords.value.length)
+  } catch (error) {
+    console.error('Failed to fetch all CET6 words:', error)
+  }
+}
 
 // 从API获取四级单词（带分页）
 const fetchCET4Words = async () => {
@@ -730,27 +1080,34 @@ const handleCET6CurrentChange = (current: number) => {
 onMounted(() => {
   fetchCET4Words()
   fetchCET6Words()
+  fetchAllCET4Words()
+  fetchAllCET6Words()
   fetchVideos()
   fetchHomework()
   fetchMySubmissions()
 })
 
 // 播放发音
-const playAudio = async (wordId: string) => {
-  try {
-    // 获取单词信息
-    const response = await fetch(`http://localhost:8080/api/words/${wordId}`)
-    if (response.ok) {
-      const word = await response.json()
-      // 构建发音URL
-      const audioUrl = `https://api.dictionaryapi.dev/media/pronunciations/en/${word.word.toLowerCase()}-us.mp3`
-      // 创建音频对象并播放
-      const audio = new Audio(audioUrl)
-      await audio.play()
-    }
-  } catch (error) {
-    console.error('Failed to play audio:', error)
-    ElMessage.error('播放发音失败，请稍后重试')
+const playAudio = (wordId: string) => {
+  // 在四级和六级单词列表中查找单词
+  let word = cet4Words.value.find((w: any) => w.id === wordId)
+  if (!word) {
+    word = cet6Words.value.find((w: any) => w.id === wordId)
+  }
+  // 如果还没找到，在所有单词列表中查找
+  if (!word) {
+    word = cet4AllWords.value.find((w: any) => w.id === wordId)
+  }
+  if (!word) {
+    word = cet6AllWords.value.find((w: any) => w.id === wordId)
+  }
+  if (word && 'speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(word.word)
+    utterance.lang = 'en-US'
+    utterance.rate = 0.8
+    window.speechSynthesis.speak(utterance)
+  } else {
+    console.log('Browser does not support speech synthesis')
   }
 }
 
@@ -946,11 +1303,57 @@ const confirmSubmit = async () => {
     console.log('作业提交成功:', response)
     ElMessage.success('作业提交成功')
     submitDialogVisible.value = false
+    // 提交成功后重新加载学生的提交列表
+    await fetchMySubmissions()
   } catch (error: any) {
     console.error('作业提交失败:', error)
     ElMessage.error(error.message || '提交失败')
   } finally {
     submitting.value = false
+  }
+}
+
+// 处理视频点击，保存观看历史
+const handleVideoClick = (video: any) => {
+  try {
+    console.log('Handling video click:', video.title)
+    console.log('Video data:', video)
+    const historyKey = 'watchHistory'
+    let history = []
+    // 从localStorage获取现有历史
+    const existingHistory = localStorage.getItem(historyKey)
+    if (existingHistory) {
+      history = JSON.parse(existingHistory)
+      console.log('Existing history:', history)
+    }
+    // 创建新的观看记录
+    const newRecord = {
+      courseId: video.id,
+      courseTitle: video.title,
+      courseImage: video.thumbnail || video.image || '',
+      courseType: activeLevel.value === 'CET4' ? 'cet4' : 'cet6',
+      videoUrl: video.videoUrl,
+      lastWatchTime: new Date().toISOString(),
+      currentChapter: '1'
+    }
+    console.log('New record:', newRecord)
+    // 移除已存在的相同视频记录
+    history = history.filter((item: any) => item.courseId !== video.id)
+    // 添加新记录到开头
+    history.unshift(newRecord)
+    // 只保留最近4条记录
+    if (history.length > 4) {
+      history = history.slice(0, 4)
+    }
+    // 保存到localStorage
+    localStorage.setItem(historyKey, JSON.stringify(history))
+    console.log('Watch history saved for video:', video.title)
+    console.log('Updated history:', history)
+    // 显示成功消息
+    ElMessage.success('已添加到最近学习')
+  } catch (error) {
+    console.error('Failed to save watch history:', error)
+    ElMessage.error('保存失败，请重试')
   }
 }
 </script>
@@ -1111,6 +1514,18 @@ const confirmSubmit = async () => {
 .video-thumbnail {
   position: relative;
   height: 180px;
+}
+
+.click-hint {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(64, 158, 255, 0.9);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 10;
 }
 
 .video-thumbnail img {

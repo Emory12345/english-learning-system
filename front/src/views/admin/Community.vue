@@ -1,6 +1,6 @@
 <template>
   <div class="community">
-    <h2>学习社区</h2>
+    <h2>学习社区管理</h2>
     
     <!-- 发布帖子 -->
     <el-card class="post-card">
@@ -25,7 +25,7 @@
         </el-form-item>
       </el-form>
     </el-card>
-
+    
     <!-- 帖子列表 -->
     <el-card class="posts-card">
       <div class="posts-list">
@@ -46,9 +46,8 @@
             
             <!-- 操作按钮 -->
             <div class="post-actions">
-              <!-- 管理员或教师置顶/取消置顶按钮 -->
+              <!-- 置顶/取消置顶按钮 -->
               <el-button 
-                v-if="userStore.userInfo?.role === 'admin' || userStore.userInfo?.role === 'teacher'"
                 type="text" 
                 size="small"
                 @click="toggleTop(post)"
@@ -56,9 +55,8 @@
                 {{ post.top ? '取消置顶' : '置顶' }}
               </el-button>
               
-              <!-- 删除按钮（作者或管理员可见） -->
+              <!-- 删除按钮 -->
               <el-button 
-                v-if="canDeletePost(post)"
                 type="text" 
                 size="small"
                 @click="deletePost(post.id)"
@@ -78,12 +76,12 @@
                 <el-icon><ChatDotRound /></el-icon>
                 {{ post.commentCount || 0 }} 评论
               </span>
-              <span class="stat-item" @click="likePost(post.id)">
-                <el-icon :class="{ 'liked': post.liked }"><Star /></el-icon>
+              <span class="stat-item">
+                <el-icon><Star /></el-icon>
                 {{ post.likeCount || 0 }} 点赞
               </span>
-              <span class="stat-item" @click="collectPost(post.id)">
-                <el-icon :class="{ 'collected': post.collected }"><Collection /></el-icon>
+              <span class="stat-item">
+                <el-icon><Collection /></el-icon>
                 {{ post.collectCount || 0 }} 收藏
               </span>
             </div>
@@ -105,23 +103,6 @@
                 <div class="comment-content">
                   {{ comment.content }}
                 </div>
-                <div class="comment-footer">
-                  <span class="comment-reply" @click="replyToComment(comment.id)">回复</span>
-                </div>
-              </div>
-            </div>
-            
-            <!-- 发表评论 -->
-            <div class="comment-form">
-              <el-input
-                v-model="commentForm.content"
-                type="textarea"
-                :rows="2"
-                placeholder="写下你的评论..."
-              />
-              <div class="comment-form-actions">
-                <el-button v-if="replyingToCommentId" type="text" @click="cancelReply">取消回复</el-button>
-                <el-button type="primary" @click="submitComment(post.id)">发表评论</el-button>
               </div>
             </div>
           </div>
@@ -136,12 +117,15 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ChatDotRound, Star, Collection } from '@element-plus/icons-vue'
 import { api } from '@/api'
-import { useUserStore } from '@/stores/user'
 
 const publishing = ref(false)
 const expandedPostId = ref<string | null>(null)
-const replyingToCommentId = ref<string | null>(null)
-const userStore = useUserStore()
+
+// 发布帖子表单
+const postForm = ref({
+  title: '',
+  content: ''
+})
 
 const API_BASE_URL = 'http://localhost:8080'
 
@@ -156,55 +140,21 @@ const getFullAvatarUrl = (avatar: string | undefined) => {
   return `${API_BASE_URL}${avatar}`
 }
 
-// 发布帖子表单
-const postForm = ref({
-  title: '',
-  content: ''
-})
-
-// 评论表单
-const commentForm = ref({
-  content: ''
-})
-
 // 帖子数据
 const posts = ref<any[]>([])
-
-// 检查是否可以删除帖子
-const canDeletePost = (post: any) => {
-  if (!userStore.userInfo) return false
-  if (userStore.userInfo.role === 'admin' || userStore.userInfo.role === 'teacher') return true
-  return post.author?.id === userStore.userInfo.id
-}
 
 // 从后端获取帖子数据
 const fetchPosts = async () => {
   try {
     const data = await api.community.getPosts()
-    // 为每个帖子添加评论数、点赞数和点赞状态
     posts.value = data.map((post: any) => ({
       ...post,
       commentCount: post.commentCount || 0,
       likeCount: post.likeCount || 0,
       collectCount: post.collectCount || 0,
-      liked: false,
-      collected: false,
       comments: [],
       top: post.top || false
     }))
-    // 检查用户是否已点赞或收藏
-    if (userStore.userInfo) {
-      for (const post of posts.value) {
-        try {
-          const liked = await api.community.checkInteraction(post.id.toString(), 'like')
-          post.liked = liked
-          const collected = await api.community.checkInteraction(post.id.toString(), 'collect')
-          post.collected = collected
-        } catch (error) {
-          console.error('Failed to check interaction:', error)
-        }
-      }
-    }
   } catch (error) {
     console.error('Failed to fetch posts:', error)
     ElMessage.error('获取帖子失败')
@@ -267,7 +217,6 @@ const toggleComments = (postId: string) => {
     expandedPostId.value = null
   } else {
     expandedPostId.value = postId
-    // 获取帖子评论
     fetchComments(postId)
   }
 }
@@ -280,76 +229,13 @@ const fetchComments = async (postId: string) => {
     if (post) {
       post.comments = comments.map((comment: any) => ({
         ...comment,
-        likeCount: comment.likeCount || 0,
-        liked: false
+        likeCount: comment.likeCount || 0
       }))
       post.commentCount = comments.length
     }
   } catch (error) {
     console.error('Failed to fetch comments:', error)
     ElMessage.error('获取评论失败')
-  }
-}
-
-// 发表评论
-const submitComment = async (postId: string) => {
-  if (commentForm.value.content) {
-    try {
-      await api.community.createComment(postId, commentForm.value.content, replyingToCommentId.value || undefined)
-      ElMessage.success('评论成功')
-      commentForm.value.content = ''
-      replyingToCommentId.value = null
-      // 重新获取评论
-      await fetchComments(postId)
-    } catch (error: any) {
-      ElMessage.error(error.message || '评论失败')
-    }
-  } else {
-    ElMessage.error('请填写评论内容')
-  }
-}
-
-// 回复评论
-const replyToComment = (commentId: string) => {
-  replyingToCommentId.value = commentId
-}
-
-// 取消回复
-const cancelReply = () => {
-  replyingToCommentId.value = null
-}
-
-// 点赞帖子
-const likePost = async (postId: string) => {
-  try {
-    await api.community.likePost(postId)
-    // 更新前端数据
-    const post = posts.value.find(p => p.id === postId)
-    if (post) {
-      post.liked = !post.liked
-      post.likeCount += post.liked ? 1 : -1
-    }
-    ElMessage.success(post?.liked ? '点赞成功' : '取消点赞成功')
-  } catch (error) {
-    console.error('Failed to like post:', error)
-    ElMessage.error('操作失败')
-  }
-}
-
-// 收藏帖子
-const collectPost = async (postId: string) => {
-  try {
-    await api.community.collectPost(postId)
-    // 更新前端数据
-    const post = posts.value.find(p => p.id === postId)
-    if (post) {
-      post.collected = !post.collected
-      post.collectCount += post.collected ? 1 : -1
-    }
-    ElMessage.success(post?.collected ? '收藏成功' : '取消收藏成功')
-  } catch (error) {
-    console.error('Failed to collect post:', error)
-    ElMessage.error('操作失败')
   }
 }
 
@@ -488,14 +374,6 @@ onMounted(() => {
   font-size: 14px;
 }
 
-.liked {
-  color: #f56c6c !important;
-}
-
-.collected {
-  color: #e6a23c !important;
-}
-
 .comments-section {
   margin-top: 20px;
   padding-top: 20px;
@@ -546,28 +424,6 @@ onMounted(() => {
   color: #606266;
   line-height: 1.5;
   margin-bottom: 10px;
-}
-
-.comment-footer {
-  display: flex;
-  gap: 15px;
-}
-
-.comment-reply {
-  font-size: 12px;
-  color: #409eff;
-  cursor: pointer;
-}
-
-.comment-form {
-  margin-top: 20px;
-}
-
-.comment-form-actions {
-  margin-top: 10px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
 }
 
 @media screen and (max-width: 768px) {

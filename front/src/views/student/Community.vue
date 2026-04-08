@@ -31,7 +31,7 @@
       <div class="posts-list">
         <div v-for="post in posts" :key="post.id" class="post-item">
           <!-- 置顶标签 -->
-          <div v-if="post.isTop" class="top-badge">
+          <div v-if="post.top" class="top-badge">
             <el-tag type="danger" effect="dark">置顶</el-tag>
           </div>
           
@@ -53,7 +53,7 @@
                 size="small"
                 @click="toggleTop(post)"
               >
-                {{ post.isTop ? '取消置顶' : '置顶' }}
+                {{ post.top ? '取消置顶' : '置顶' }}
               </el-button>
               
               <!-- 删除按钮（作者或管理员可见） -->
@@ -190,7 +190,7 @@ const fetchPosts = async () => {
       liked: false,
       collected: false,
       comments: [],
-      isTop: post.isTop || false
+      top: post.top || false
     }))
     // 检查用户是否已点赞或收藏
     if (userStore.userInfo) {
@@ -253,8 +253,8 @@ const deletePost = async (postId: string) => {
 // 置顶/取消置顶帖子
 const toggleTop = async (post: any) => {
   try {
-    await api.community.toggleTopPost(post.id.toString(), !post.isTop)
-    ElMessage.success(post.isTop ? '取消置顶成功' : '置顶成功')
+    await api.community.toggleTopPost(post.id.toString(), !post.top)
+    ElMessage.success(post.top ? '取消置顶成功' : '置顶成功')
     await fetchPosts()
   } catch (error: any) {
     ElMessage.error(error.message || '操作失败')

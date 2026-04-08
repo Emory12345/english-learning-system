@@ -124,7 +124,7 @@ const handleLogin = async () => {
             router.push('/teacher/teenage-english')
             break
           case 'admin':
-            router.push('/admin/home')
+            router.push('/admin/data-statistics')
             break
         }
       } catch (error: any) {

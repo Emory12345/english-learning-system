@@ -147,6 +147,11 @@
                 <span>课程审核</span>
               </template>
             </el-menu-item>
+            <el-menu-item index="/admin/community">
+              <template #title>
+                <span>学习社区</span>
+              </template>
+            </el-menu-item>
           </template>
         </el-menu>
       </aside>
