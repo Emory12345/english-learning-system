@@ -31,4 +31,12 @@ public class User {
     private String status;
 
     private String username;
+
+    // 教师专用字段
+    private String gender;
+    private String subject;
+    private String education;
+    private String experience;
+    private String introduction;
+    private String certificate;
 }

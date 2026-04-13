@@ -109,6 +109,12 @@ public class AuthController {
             user.setStatus("pending");
             // 保存教师专用字段
             user.setUsername(userData.get("username"));
+            user.setGender(userData.get("gender"));
+            user.setSubject(userData.get("subject"));
+            user.setEducation(userData.get("education"));
+            user.setExperience(userData.get("experience"));
+            user.setIntroduction(userData.get("introduction"));
+            user.setCertificate(userData.get("certificate"));
         } else {
             user.setStatus("active");
             // 为学生角色设置默认username（使用邮箱前缀）
