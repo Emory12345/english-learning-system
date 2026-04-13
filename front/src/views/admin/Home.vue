@@ -13,7 +13,7 @@
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="name" label="姓名" />
         <el-table-column prop="email" label="邮箱" />
-        <el-table-column prop="username" label="用户名" />
+        <el-table-column prop="certificate" label="教师资格证号" />
         <el-table-column prop="subject" label="教学科目" />
         <el-table-column prop="experience" label="教学年限" />
         <el-table-column prop="createdAt" label="申请时间" />

@@ -182,8 +182,38 @@
                   <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
                 </div>
                 <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
+                
+                <!-- 已提交作业信息 -->
+                <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
+                  <el-divider />
+                  <h5>我的提交：</h5>
+                  <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
+                  <div v-if="getSubmissionForHomework(homework.id).audio" class="submission-audio">
+                    <audio :src="`http://localhost:8080${getSubmissionForHomework(homework.id).audio}`" controls></audio>
+                  </div>
+                  <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
+                  
+                  <!-- 批改结果 -->
+                  <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
+                    <h5>批改结果：</h5>
+                    <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
+                    <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
+                  </div>
+                </div>
               </div>
-              <el-button type="primary" size="small" @click="submitHomework(homework.id)">提交作业</el-button>
+              <div class="homework-actions">
+                <el-button 
+                  v-if="!getSubmissionForHomework(homework.id)" 
+                  type="primary" 
+                  size="small" 
+                  @click="submitHomework(homework.id)"
+                >
+                  提交作业
+                </el-button>
+                <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
+                  {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
+                </el-tag>
+              </div>
             </div>
             <el-empty v-if="readingHomework.length === 0" description="暂无阅读作业" />
           </div>
@@ -234,8 +264,38 @@
                   <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
                 </div>
                 <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
+                
+                <!-- 已提交作业信息 -->
+                <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
+                  <el-divider />
+                  <h5>我的提交：</h5>
+                  <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
+                  <div v-if="getSubmissionForHomework(homework.id).audio" class="submission-audio">
+                    <audio :src="`http://localhost:8080${getSubmissionForHomework(homework.id).audio}`" controls></audio>
+                  </div>
+                  <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
+                  
+                  <!-- 批改结果 -->
+                  <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
+                    <h5>批改结果：</h5>
+                    <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
+                    <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
+                  </div>
+                </div>
               </div>
-              <el-button type="primary" size="small" @click="submitHomework(homework.id)">提交作业</el-button>
+              <div class="homework-actions">
+                <el-button 
+                  v-if="!getSubmissionForHomework(homework.id)" 
+                  type="primary" 
+                  size="small" 
+                  @click="submitHomework(homework.id)"
+                >
+                  提交作业
+                </el-button>
+                <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
+                  {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
+                </el-tag>
+              </div>
             </div>
             <el-empty v-if="listeningHomework.length === 0" description="暂无听力作业" />
           </div>
@@ -286,8 +346,38 @@
                   <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
                 </div>
                 <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
+                
+                <!-- 已提交作业信息 -->
+                <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
+                  <el-divider />
+                  <h5>我的提交：</h5>
+                  <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
+                  <div v-if="getSubmissionForHomework(homework.id).audio" class="submission-audio">
+                    <audio :src="`http://localhost:8080${getSubmissionForHomework(homework.id).audio}`" controls></audio>
+                  </div>
+                  <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
+                  
+                  <!-- 批改结果 -->
+                  <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
+                    <h5>批改结果：</h5>
+                    <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
+                    <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
+                  </div>
+                </div>
               </div>
-              <el-button type="primary" size="small" @click="submitHomework(homework.id)">提交作业</el-button>
+              <div class="homework-actions">
+                <el-button 
+                  v-if="!getSubmissionForHomework(homework.id)" 
+                  type="primary" 
+                  size="small" 
+                  @click="submitHomework(homework.id)"
+                >
+                  提交作业
+                </el-button>
+                <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
+                  {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
+                </el-tag>
+              </div>
             </div>
             <el-empty v-if="writingHomework.length === 0" description="暂无写作作业" />
           </div>
@@ -699,6 +789,8 @@ const confirmSubmit = async () => {
     console.log('作业提交成功:', response)
     ElMessage.success('作业提交成功')
     submitDialogVisible.value = false
+    // 重新获取作业提交数据，以便显示最新的提交
+    await fetchMySubmissions()
   } catch (error: any) {
     console.error('作业提交失败:', error)
     ElMessage.error(error.message || '提交失败')
@@ -827,6 +919,15 @@ const confirmSubmit = async () => {
   margin: 10px 0;
   color: #909399;
   font-size: 13px;
+}
+
+.submission-audio {
+  margin: 10px 0;
+}
+
+.submission-audio audio {
+  max-width: 300px;
+  border-radius: 4px;
 }
 
 .grade-result {

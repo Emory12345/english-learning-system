@@ -543,6 +543,8 @@ const confirmSubmit = async () => {
     console.log('作业提交成功:', response)
     ElMessage.success('作业提交成功')
     submitDialogVisible.value = false
+    // 重新获取作业提交数据，以便显示最新的提交
+    await fetchMySubmissions()
   } catch (error: any) {
     console.error('作业提交失败:', error)
     ElMessage.error(error.message || '提交失败')
