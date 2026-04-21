@@ -214,128 +214,405 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 全局样式变量 */
+:root {
+  --primary-color: #409EFF;
+  --primary-light: #66b1ff;
+  --primary-dark: #3a8ee6;
+  --secondary-color: #13c2c2;
+  --text-color: #303133;
+  --text-light: #606266;
+  --text-lighter: #909399;
+  --background-color: #f5f7fa;
+  --card-background: #ffffff;
+  --border-color: #e4e7ed;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --transition: all 0.3s ease;
+}
+
 .course-selection {
   padding: 20px 0;
+  font-family: 'Arial', sans-serif;
 }
 
 .course-selection h2 {
-  margin-bottom: 20px;
-  color: #303133;
+  margin-bottom: 30px;
+  color: var(--text-color);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  position: relative;
+  display: inline-block;
 }
 
+.course-selection h2::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 0;
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+  border-radius: 2px;
+}
+
+/* 筛选卡片 */
 .filter-card {
-  margin-bottom: 20px;
-}
-
-.filter-form {
-  display: flex;
-  align-items: center;
-  margin-bottom: 15px;
-}
-
-.selected-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  padding-top: 10px;
-  border-top: 1px solid #e4e7ed;
-}
-
-.course-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.course-card {
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
+  margin-bottom: 30px;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
-  transition: all 0.3s;
+  transition: var(--transition);
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
 }
 
-.course-card:hover {
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+.filter-card:hover {
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
-.course-image {
-  height: 180px;
+.filter-card .el-card__header {
+  padding: 24px;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filter-card .el-card__header span {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color);
+  letter-spacing: 0.5px;
+}
+
+.filter-card .el-card__body {
+  padding: 24px;
+}
+
+/* 筛选表单 */
+.filter-form {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.filter-form .el-form-item {
+  margin-right: 10px;
+}
+
+.filter-form .el-select,
+.filter-form .el-input {
+  width: 200px;
+  border-radius: var(--border-radius-md);
+  transition: var(--transition);
+}
+
+.filter-form .el-select:hover,
+.filter-form .el-input:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+/* 已选筛选条件 */
+.selected-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.selected-filters .el-tag {
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 14px;
+  background-color: rgba(64, 158, 255, 0.1);
+  color: var(--primary-color);
+  border-color: var(--primary-light);
+  transition: var(--transition);
+}
+
+.selected-filters .el-tag:hover {
+  background-color: rgba(64, 158, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 课程网格 */
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+/* 课程卡片 */
+.course-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
   overflow: hidden;
+  transition: var(--transition);
+  background-color: var(--card-background);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+.course-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+}
+
+.course-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+}
+
+.course-image {
+  height: 220px;
+  overflow: hidden;
+  position: relative;
 }
 
 .course-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.course-card:hover .course-image img {
+  transform: scale(1.1);
 }
 
 .course-info {
-  padding: 15px;
+  padding: 24px;
 }
 
 .course-info h3 {
-  margin: 0 0 10px 0;
-  font-size: 16px;
+  margin: 0 0 16px 0;
+  font-size: 20px;
   font-weight: 600;
-}
-
-.course-info p {
-  margin: 0 0 15px 0;
-  font-size: 14px;
-  color: #606266;
-  line-height: 1.5;
-  height: 42px;
+  color: var(--text-color);
+  line-height: 1.4;
+  height: 56px;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
+.course-info p {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  color: var(--text-light);
+  line-height: 1.6;
+  height: 48px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* 课程元信息 */
 .course-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 15px;
+  gap: 12px;
+  margin-bottom: 24px;
+  align-items: center;
 }
 
 .course-type,
 .course-level {
-  padding: 2px 8px;
-  background-color: #ecf5ff;
-  color: #409EFF;
-  border-radius: 10px;
-  font-size: 12px;
+  padding: 6px 16px;
+  background-color: rgba(64, 158, 255, 0.1);
+  color: var(--primary-color);
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.course-type:hover,
+.course-level:hover {
+  background-color: rgba(64, 158, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .course-duration {
-  font-size: 12px;
-  color: #909399;
+  font-size: 14px;
+  color: var(--text-light);
   margin-left: auto;
+  font-weight: 500;
 }
 
+/* 课程操作按钮 */
 .course-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
+.course-actions .el-button {
+  flex: 1;
+  border-radius: var(--border-radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 16px;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.course-actions .el-button--primary {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  border-color: var(--primary-color);
+}
+
+.course-actions .el-button--primary:hover {
+  background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+  border-color: var(--primary-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.course-actions .el-button--default {
+  background-color: var(--card-background);
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+.course-actions .el-button--default:hover {
+  background-color: var(--background-color);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* 分页 */
 .pagination {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: 40px;
+}
+
+.pagination .el-pagination {
+  font-size: 14px;
+}
+
+.pagination .el-pagination__item {
+  border-radius: var(--border-radius-md);
+  transition: var(--transition);
+}
+
+.pagination .el-pagination__item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.pagination .el-pagination__item.is-active {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.pagination .el-pagination__button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 响应式设计 */
+@media screen and (max-width: 1024px) {
+  .course-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  
+  .filter-form .el-select,
+  .filter-form .el-input {
+    width: 180px;
+  }
 }
 
 @media screen and (max-width: 768px) {
+  .course-selection {
+    padding: 15px 0;
+  }
+  
+  .course-selection h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+  
+  .filter-card .el-card__header,
+  .filter-card .el-card__body {
+    padding: 16px;
+  }
+  
   .filter-form {
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
+    gap: 12px;
+  }
+  
+  .filter-form .el-select,
+  .filter-form .el-input {
+    width: 100%;
   }
   
   .course-grid {
     grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .course-image {
+    height: 200px;
+  }
+  
+  .course-info {
+    padding: 16px;
+  }
+  
+  .course-info h3 {
+    font-size: 18px;
+  }
+  
+  .course-actions {
+    flex-direction: column;
+  }
+  
+  .course-actions .el-button {
+    width: 100%;
+  }
+  
+  .pagination {
+    margin-top: 30px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .course-selection h2 {
+    font-size: 20px;
+  }
+  
+  .course-image {
+    height: 180px;
+  }
+  
+  .course-info h3 {
+    font-size: 16px;
   }
 }
 </style>

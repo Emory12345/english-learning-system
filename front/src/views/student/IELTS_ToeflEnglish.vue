@@ -1,1504 +1,533 @@
 <template>
   <div class="ielts-toefl-english">
-    <h2>雅思托福</h2>
-    
-    <!-- 雅思托福选项卡 -->
-    <el-tabs v-model="activeLevel" style="margin-bottom: 20px;">
-      <el-tab-pane label="雅思" name="IELTS">
-        <div class="level-content">
-          <!-- 学习模块标签页 -->
-          <el-tabs v-model="activeTab">
-            <el-tab-pane label="单词" name="words">
-              <el-card class="module-card">
-                <div class="search-bar">
-                  <el-input
-                    v-model="ieltsSearchKeyword"
-                    placeholder="搜索单词..."
-                    clearable
-                    style="margin-bottom: 20px"
-                  >
-                    <template #prefix>
-                      <el-icon><Search /></el-icon>
-                    </template>
-                  </el-input>
-                </div>
-                <div class="word-list">
-                  <div v-for="word in filteredIeltsWords" :key="word.id" class="word-item">
-                    <div class="word-info">
-                      <h3>{{ word.word }}</h3>
-                      <p class="phonetic">{{ word.phonetic }}</p>
-                      <p class="meaning">{{ word.definition }}</p>
-                      <p class="chinese-meaning" v-if="word.chineseMeaning">{{ word.chineseMeaning }}</p>
-                      <p class="example">{{ word.example }}</p>
-                    </div>
-                    <div class="word-actions">
-                      <el-button type="primary" size="small" @click="playAudio(word.id)">播放发音</el-button>
-                      <el-button type="success" size="small" @click="addToList(word.id)">添加到学习列表</el-button>
-                    </div>
-                  </div>
-                  
-                  <!-- 雅思分页组件 -->
-                  <div class="pagination" v-if="!ieltsSearchKeyword && ieltsTotalPages > 1">
-                    <el-pagination
-                      v-model:current-page="ieltsCurrentPage"
-                      v-model:page-size="ieltsPageSize"
-                      :page-sizes="[10, 20, 50, 100]"
-                      layout="total, sizes, prev, pager, next, jumper"
-                      :total="ieltsTotalElements"
-                      @size-change="handleIeltsSizeChange"
-                      @current-change="handleIeltsCurrentChange"
-                    />
-                  </div>
-                </div>
-              </el-card>
-            </el-tab-pane>
-
-      <el-tab-pane label="口语" name="speaking">
-        <!-- 口语视频 -->
-        <el-card class="module-card">
-          <template #header>
-            <div class="card-header">
-              <span>口语视频学习</span>
-              <el-tag type="info">视频学习</el-tag>
-            </div>
-          </template>
-          <div class="video-grid">
-            <div v-for="video in ieltsSpeakingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
-              <div class="video-thumbnail">
-                <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
-                  您的浏览器不支持视频播放
-                </video>
-              </div>
-              <div class="video-info">
-                <h4>{{ video.title }}</h4>
-                <p>{{ video.description }}</p>
-                <p class="video-type">类型: {{ video.type }}</p>
-                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
-              </div>
-            </div>
-            <el-empty v-if="ieltsSpeakingVideos.length === 0" description="暂无口语视频" />
-          </div>
-        </el-card>
-        
-        <!-- 口语作业 -->
-        <el-card class="module-card" style="margin-top: 20px">
-          <template #header>
-            <div class="card-header">
-              <span>口语作业</span>
-              <el-tag type="warning">练习巩固</el-tag>
-            </div>
-          </template>
-          <div class="homework-list">
-            <div v-for="homework in ieltsSpeakingHomework" :key="homework.id" class="homework-item">
-              <div class="homework-info">
-                <h4>{{ homework.title }}</h4>
-                <p class="homework-content">{{ homework.content }}</p>
-                <div v-if="homework.image" class="homework-image">
-                  <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
-                </div>
-                <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
-                
-                <!-- 已提交作业信息 -->
-                <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
-                  <el-divider />
-                  <h5>我的提交：</h5>
-                  <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
-                  <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
-                    <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
-                  </div>
-                  <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
-                  
-                  <!-- 批改结果 -->
-                  <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
-                    <h5>批改结果：</h5>
-                    <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
-                    <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
-                  </div>
-                </div>
-              </div>
-              <div class="homework-actions">
-                <el-button 
-                  v-if="!getSubmissionForHomework(homework.id)" 
-                  type="primary" 
-                  size="small" 
-                  @click="submitHomework(homework.id)"
-                >
-                  提交作业
-                </el-button>
-                <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
-                  {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
-                </el-tag>
-              </div>
-            </div>
-            <el-empty v-if="ieltsSpeakingHomework.length === 0" description="暂无口语作业" />
-          </div>
-        </el-card>
-      </el-tab-pane>
-      
-      <el-tab-pane label="阅读" name="reading">
-        <!-- 阅读视频 -->
-        <el-card class="module-card">
-          <template #header>
-            <div class="card-header">
-              <span>阅读视频学习</span>
-              <el-tag type="info">视频学习</el-tag>
-            </div>
-          </template>
-          <div class="video-grid">
-            <div v-for="video in ieltsReadingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
-              <div class="video-thumbnail">
-                <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
-                  您的浏览器不支持视频播放
-                </video>
-              </div>
-              <div class="video-info">
-                <h4>{{ video.title }}</h4>
-                <p>{{ video.description }}</p>
-                <p class="video-type">类型: {{ video.type }}</p>
-                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
-              </div>
-            </div>
-            <el-empty v-if="ieltsReadingVideos.length === 0" description="暂无阅读视频" />
-          </div>
-        </el-card>
-        
-        <!-- 阅读作业 -->
-        <el-card class="module-card" style="margin-top: 20px">
-          <template #header>
-            <div class="card-header">
-              <span>阅读作业</span>
-              <el-tag type="warning">练习巩固</el-tag>
-            </div>
-          </template>
-          <div class="homework-list">
-            <div v-for="homework in ieltsReadingHomework" :key="homework.id" class="homework-item">
-              <div class="homework-info">
-                <h4>{{ homework.title }}</h4>
-                <p class="homework-content">{{ homework.content }}</p>
-                <div v-if="homework.image" class="homework-image">
-                  <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
-                </div>
-                <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
-                
-                <!-- 已提交作业信息 -->
-                <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
-                  <el-divider />
-                  <h5>我的提交：</h5>
-                  <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
-                  <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
-                    <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
-                  </div>
-                  <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
-                  
-                  <!-- 批改结果 -->
-                  <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
-                    <h5>批改结果：</h5>
-                    <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
-                    <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
-                  </div>
-                </div>
-              </div>
-              <div class="homework-actions">
-                <el-button 
-                  v-if="!getSubmissionForHomework(homework.id)" 
-                  type="primary" 
-                  size="small" 
-                  @click="submitHomework(homework.id)"
-                >
-                  提交作业
-                </el-button>
-                <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
-                  {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
-                </el-tag>
-              </div>
-            </div>
-            <el-empty v-if="ieltsReadingHomework.length === 0" description="暂无阅读作业" />
-          </div>
-        </el-card>
-      </el-tab-pane>
-      
-      <el-tab-pane label="听力" name="listening">
-        <!-- 听力视频 -->
-        <el-card class="module-card">
-          <template #header>
-            <div class="card-header">
-              <span>听力视频学习</span>
-              <el-tag type="info">视频学习</el-tag>
-            </div>
-          </template>
-          <div class="video-grid">
-            <div v-for="video in ieltsListeningVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
-              <div class="video-thumbnail">
-                <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
-                  您的浏览器不支持视频播放
-                </video>
-              </div>
-              <div class="video-info">
-                <h4>{{ video.title }}</h4>
-                <p>{{ video.description }}</p>
-                <p class="video-type">类型: {{ video.type }}</p>
-                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
-              </div>
-            </div>
-            <el-empty v-if="ieltsListeningVideos.length === 0" description="暂无听力视频" />
-          </div>
-        </el-card>
-        
-        <!-- 听力作业 -->
-        <el-card class="module-card" style="margin-top: 20px">
-          <template #header>
-            <div class="card-header">
-              <span>听力作业</span>
-              <el-tag type="warning">练习巩固</el-tag>
-            </div>
-          </template>
-          <div class="homework-list">
-            <div v-for="homework in ieltsListeningHomework" :key="homework.id" class="homework-item">
-              <div class="homework-info">
-                <h4>{{ homework.title }}</h4>
-                <p class="homework-content">{{ homework.content }}</p>
-                <div v-if="homework.image" class="homework-image">
-                  <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
-                </div>
-                <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
-                
-                <!-- 已提交作业信息 -->
-                <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
-                  <el-divider />
-                  <h5>我的提交：</h5>
-                  <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
-                  <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
-                    <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
-                  </div>
-                  <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
-                  
-                  <!-- 批改结果 -->
-                  <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
-                    <h5>批改结果：</h5>
-                    <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
-                    <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
-                  </div>
-                </div>
-              </div>
-              <div class="homework-actions">
-                <el-button 
-                  v-if="!getSubmissionForHomework(homework.id)" 
-                  type="primary" 
-                  size="small" 
-                  @click="submitHomework(homework.id)"
-                >
-                  提交作业
-                </el-button>
-                <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
-                  {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
-                </el-tag>
-              </div>
-            </div>
-            <el-empty v-if="ieltsListeningHomework.length === 0" description="暂无听力作业" />
-          </div>
-        </el-card>
-      </el-tab-pane>
-      
-      <el-tab-pane label="写作" name="writing">
-        <!-- 写作视频 -->
-        <el-card class="module-card">
-          <template #header>
-            <div class="card-header">
-              <span>写作视频学习</span>
-              <el-tag type="info">视频学习</el-tag>
-            </div>
-          </template>
-          <div class="video-grid">
-            <div v-for="video in ieltsWritingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
-              <div class="video-thumbnail">
-                <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
-                  您的浏览器不支持视频播放
-                </video>
-              </div>
-              <div class="video-info">
-                <h4>{{ video.title }}</h4>
-                <p>{{ video.description }}</p>
-                <p class="video-type">类型: {{ video.type }}</p>
-                <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
-              </div>
-            </div>
-            <el-empty v-if="ieltsWritingVideos.length === 0" description="暂无写作视频" />
-          </div>
-        </el-card>
-        
-        <!-- 写作作业 -->
-        <el-card class="module-card" style="margin-top: 20px">
-          <template #header>
-            <div class="card-header">
-              <span>写作作业</span>
-              <el-tag type="warning">练习巩固</el-tag>
-            </div>
-          </template>
-          <div class="homework-list">
-            <div v-for="homework in ieltsWritingHomework" :key="homework.id" class="homework-item">
-              <div class="homework-info">
-                <h4>{{ homework.title }}</h4>
-                <p class="homework-content">{{ homework.content }}</p>
-                <div v-if="homework.image" class="homework-image">
-                  <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
-                </div>
-                <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
-                
-                <!-- 已提交作业信息 -->
-                <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
-                  <el-divider />
-                  <h5>我的提交：</h5>
-                  <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
-                  <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
-                    <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
-                  </div>
-                  <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
-                  
-                  <!-- 批改结果 -->
-                  <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
-                    <h5>批改结果：</h5>
-                    <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
-                    <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
-                  </div>
-                </div>
-              </div>
-              <div class="homework-actions">
-                <el-button 
-                  v-if="!getSubmissionForHomework(homework.id)" 
-                  type="primary" 
-                  size="small" 
-                  @click="submitHomework(homework.id)"
-                >
-                  提交作业
-                </el-button>
-                <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
-                  {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
-                </el-tag>
-              </div>
-            </div>
-            <el-empty v-if="ieltsWritingHomework.length === 0" description="暂无写作作业" />
-          </div>
-        </el-card>
-      </el-tab-pane>
-          </el-tabs>
+    <!-- 顶部导航栏 -->
+    <div class="top-nav">
+      <div class="exam-switcher">
+        <el-button 
+          :type="activeExam === 'IELTS' ? 'primary' : 'default'"
+          :class="['exam-btn', activeExam === 'IELTS' ? 'active' : '']"
+          @click="activeExam = 'IELTS'"
+        >
+          雅思 IELTS
+        </el-button>
+        <el-button 
+          :type="activeExam === 'TOEFL' ? 'primary' : 'default'"
+          :class="['exam-btn', activeExam === 'TOEFL' ? 'active' : '']"
+          @click="activeExam = 'TOEFL'"
+        >
+          托福 TOEFL
+        </el-button>
+      </div>
+      <div class="exam-info">
+        <div class="target-score">
+          <span class="label">目标分：</span>
+          <span class="value">{{ activeExam === 'IELTS' ? '7.0' : '100' }}</span>
         </div>
-      </el-tab-pane>
-      
-      <el-tab-pane label="托福" name="TOEFL">
-        <div class="level-content">
-          <!-- 学习模块标签页 -->
-          <el-tabs v-model="activeTab">
-            <el-tab-pane label="单词" name="words">
-              <el-card class="module-card">
-                <div class="search-bar">
-                  <el-input
-                    v-model="toeflSearchKeyword"
-                    placeholder="搜索单词..."
-                    clearable
-                    style="margin-bottom: 20px"
-                  >
-                    <template #prefix>
-                      <el-icon><Search /></el-icon>
-                    </template>
-                  </el-input>
-                </div>
-                <div class="word-list">
-                  <div v-for="word in filteredToeflWords" :key="word.id" class="word-item">
-                    <div class="word-info">
-                      <h3>{{ word.word }}</h3>
-                      <p class="phonetic">{{ word.phonetic }}</p>
-                      <p class="meaning">{{ word.definition }}</p>
-                      <p class="chinese-meaning" v-if="word.chineseMeaning">{{ word.chineseMeaning }}</p>
-                      <p class="example">{{ word.example }}</p>
-                    </div>
-                    <div class="word-actions">
-                      <el-button type="primary" size="small" @click="playAudio(word.id)">播放发音</el-button>
-                      <el-button type="success" size="small" @click="addToList(word.id)">添加到学习列表</el-button>
-                    </div>
-                  </div>
-                  
-                  <!-- 托福分页组件 -->
-                  <div class="pagination" v-if="!toeflSearchKeyword && toeflTotalPages > 1">
-                    <el-pagination
-                      v-model:current-page="toeflCurrentPage"
-                      v-model:page-size="toeflPageSize"
-                      :page-sizes="[10, 20, 50, 100]"
-                      layout="total, sizes, prev, pager, next, jumper"
-                      :total="toeflTotalElements"
-                      @size-change="handleToeflSizeChange"
-                      @current-change="handleToeflCurrentChange"
-                    />
-                  </div>
-                </div>
-              </el-card>
-            </el-tab-pane>
-            
-            <el-tab-pane label="口语" name="speaking">
-              <!-- 口语视频 -->
-              <el-card class="module-card">
-                <template #header>
-                  <div class="card-header">
-                    <span>口语视频学习</span>
-                    <el-tag type="info">视频学习</el-tag>
-                  </div>
-                </template>
-                <div class="video-grid">
-                  <div v-for="video in toeflSpeakingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
-                    <div class="video-thumbnail">
-                      <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
-                        您的浏览器不支持视频播放
-                      </video>
-                    </div>
-                    <div class="video-info">
-                      <h4>{{ video.title }}</h4>
-                      <p>{{ video.description }}</p>
-                      <p class="video-type">类型: {{ video.type }}</p>
-                      <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
-                    </div>
-                  </div>
-                  <el-empty v-if="toeflSpeakingVideos.length === 0" description="暂无口语视频" />
-                </div>
-              </el-card>
-              
-              <!-- 口语作业 -->
-              <el-card class="module-card" style="margin-top: 20px">
-                <template #header>
-                  <div class="card-header">
-                    <span>口语作业</span>
-                    <el-tag type="warning">练习巩固</el-tag>
-                  </div>
-                </template>
-                <div class="homework-list">
-                  <div v-for="homework in toeflSpeakingHomework" :key="homework.id" class="homework-item">
-                    <div class="homework-info">
-                      <h4>{{ homework.title }}</h4>
-                      <p class="homework-content">{{ homework.content }}</p>
-                      <div v-if="homework.image" class="homework-image">
-                        <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
-                      </div>
-                      <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
-                      
-                      <!-- 已提交作业信息 -->
-                      <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
-                        <el-divider />
-                        <h5>我的提交：</h5>
-                        <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
-                        <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
-                          <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
-                        </div>
-                        <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
-                        
-                        <!-- 批改结果 -->
-                        <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
-                          <h5>批改结果：</h5>
-                          <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
-                          <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="homework-actions">
-                      <el-button 
-                        v-if="!getSubmissionForHomework(homework.id)" 
-                        type="primary" 
-                        size="small" 
-                        @click="submitHomework(homework.id)"
-                      >
-                        提交作业
-                      </el-button>
-                      <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
-                        {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
-                      </el-tag>
-                    </div>
-                  </div>
-                  <el-empty v-if="toeflSpeakingHomework.length === 0" description="暂无口语作业" />
-                </div>
-              </el-card>
-            </el-tab-pane>
-            
-            <el-tab-pane label="阅读" name="reading">
-              <!-- 阅读视频 -->
-              <el-card class="module-card">
-                <template #header>
-                  <div class="card-header">
-                    <span>阅读视频学习</span>
-                    <el-tag type="info">视频学习</el-tag>
-                  </div>
-                </template>
-                <div class="video-grid">
-                  <div v-for="video in toeflReadingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
-                    <div class="video-thumbnail">
-                      <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
-                        您的浏览器不支持视频播放
-                      </video>
-                    </div>
-                    <div class="video-info">
-                      <h4>{{ video.title }}</h4>
-                      <p>{{ video.description }}</p>
-                      <p class="video-type">类型: {{ video.type }}</p>
-                      <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
-                    </div>
-                  </div>
-                  <el-empty v-if="toeflReadingVideos.length === 0" description="暂无阅读视频" />
-                </div>
-              </el-card>
-              
-              <!-- 阅读作业 -->
-              <el-card class="module-card" style="margin-top: 20px">
-                <template #header>
-                  <div class="card-header">
-                    <span>阅读作业</span>
-                    <el-tag type="warning">练习巩固</el-tag>
-                  </div>
-                </template>
-                <div class="homework-list">
-                  <div v-for="homework in toeflReadingHomework" :key="homework.id" class="homework-item">
-                    <div class="homework-info">
-                      <h4>{{ homework.title }}</h4>
-                      <p class="homework-content">{{ homework.content }}</p>
-                      <div v-if="homework.image" class="homework-image">
-                        <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
-                      </div>
-                      <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
-                      
-                      <!-- 已提交作业信息 -->
-                      <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
-                        <el-divider />
-                        <h5>我的提交：</h5>
-                        <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
-                        <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
-                          <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
-                        </div>
-                        <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
-                        
-                        <!-- 批改结果 -->
-                        <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
-                          <h5>批改结果：</h5>
-                          <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
-                          <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="homework-actions">
-                      <el-button 
-                        v-if="!getSubmissionForHomework(homework.id)" 
-                        type="primary" 
-                        size="small" 
-                        @click="submitHomework(homework.id)"
-                      >
-                        提交作业
-                      </el-button>
-                      <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
-                        {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
-                      </el-tag>
-                    </div>
-                  </div>
-                  <el-empty v-if="toeflReadingHomework.length === 0" description="暂无阅读作业" />
-                </div>
-              </el-card>
-            </el-tab-pane>
-            
-            <el-tab-pane label="听力" name="listening">
-              <!-- 听力视频 -->
-              <el-card class="module-card">
-                <template #header>
-                  <div class="card-header">
-                    <span>听力视频学习</span>
-                    <el-tag type="info">视频学习</el-tag>
-                  </div>
-                </template>
-                <div class="video-grid">
-                  <div v-for="video in toeflListeningVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
-                    <div class="video-thumbnail">
-                      <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
-                        您的浏览器不支持视频播放
-                      </video>
-                    </div>
-                    <div class="video-info">
-                      <h4>{{ video.title }}</h4>
-                      <p>{{ video.description }}</p>
-                      <p class="video-type">类型: {{ video.type }}</p>
-                      <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
-                    </div>
-                  </div>
-                  <el-empty v-if="toeflListeningVideos.length === 0" description="暂无听力视频" />
-                </div>
-              </el-card>
-              
-              <!-- 听力作业 -->
-              <el-card class="module-card" style="margin-top: 20px">
-                <template #header>
-                  <div class="card-header">
-                    <span>听力作业</span>
-                    <el-tag type="warning">练习巩固</el-tag>
-                  </div>
-                </template>
-                <div class="homework-list">
-                  <div v-for="homework in toeflListeningHomework" :key="homework.id" class="homework-item">
-                    <div class="homework-info">
-                      <h4>{{ homework.title }}</h4>
-                      <p class="homework-content">{{ homework.content }}</p>
-                      <div v-if="homework.image" class="homework-image">
-                        <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
-                      </div>
-                      <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
-                      
-                      <!-- 已提交作业信息 -->
-                      <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
-                        <el-divider />
-                        <h5>我的提交：</h5>
-                        <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
-                        <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
-                          <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
-                        </div>
-                        <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
-                        
-                        <!-- 批改结果 -->
-                        <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
-                          <h5>批改结果：</h5>
-                          <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
-                          <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="homework-actions">
-                      <el-button 
-                        v-if="!getSubmissionForHomework(homework.id)" 
-                        type="primary" 
-                        size="small" 
-                        @click="submitHomework(homework.id)"
-                      >
-                        提交作业
-                      </el-button>
-                      <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
-                        {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
-                      </el-tag>
-                    </div>
-                  </div>
-                  <el-empty v-if="toeflListeningHomework.length === 0" description="暂无听力作业" />
-                </div>
-              </el-card>
-            </el-tab-pane>
-            
-            <el-tab-pane label="写作" name="writing">
-              <!-- 写作视频 -->
-              <el-card class="module-card">
-                <template #header>
-                  <div class="card-header">
-                    <span>写作视频学习</span>
-                    <el-tag type="info">视频学习</el-tag>
-                  </div>
-                </template>
-                <div class="video-grid">
-                  <div v-for="video in toeflWritingVideos" :key="video.id" class="video-card" @click="handleVideoClick(video)">
-                    <div class="video-thumbnail">
-                      <video :src="`http://localhost:8080${video.videoUrl}`" controls width="100%" height="180px">
-                        您的浏览器不支持视频播放
-                      </video>
-                    </div>
-                    <div class="video-info">
-                      <h4>{{ video.title }}</h4>
-                      <p>{{ video.description }}</p>
-                      <p class="video-type">类型: {{ video.type }}</p>
-                      <el-button type="primary" size="small" @click.stop="handleVideoClick(video)">保存到最近学习</el-button>
-                    </div>
-                  </div>
-                  <el-empty v-if="toeflWritingVideos.length === 0" description="暂无写作视频" />
-                </div>
-              </el-card>
-              
-              <!-- 写作作业 -->
-              <el-card class="module-card" style="margin-top: 20px">
-                <template #header>
-                  <div class="card-header">
-                    <span>写作作业</span>
-                    <el-tag type="warning">练习巩固</el-tag>
-                  </div>
-                </template>
-                <div class="homework-list">
-                  <div v-for="homework in toeflWritingHomework" :key="homework.id" class="homework-item">
-                    <div class="homework-info">
-                      <h4>{{ homework.title }}</h4>
-                      <p class="homework-content">{{ homework.content }}</p>
-                      <div v-if="homework.image" class="homework-image">
-                        <img :src="`http://localhost:8080${homework.image}`" :alt="homework.title" />
-                      </div>
-                      <p class="homework-time">发布时间: {{ formatTime(homework.createdAt) }}</p>
-                      
-                      <!-- 已提交作业信息 -->
-                      <div v-if="getSubmissionForHomework(homework.id)" class="submission-info">
-                        <el-divider />
-                        <h5>我的提交：</h5>
-                        <p class="submission-content">{{ getSubmissionForHomework(homework.id).content }}</p>
-                        <div v-if="getSubmissionForHomework(homework.id).image" class="submission-image">
-                          <img :src="`http://localhost:8080${getSubmissionForHomework(homework.id).image}`" alt="我提交的图片" />
-                        </div>
-                        <p class="submission-time">提交时间: {{ formatTime(getSubmissionForHomework(homework.id).submissionDate) }}</p>
-                        
-                        <!-- 批改结果 -->
-                        <div v-if="getSubmissionForHomework(homework.id).status === 'graded'" class="grade-result">
-                          <h5>批改结果：</h5>
-                          <p class="score">分数：{{ getSubmissionForHomework(homework.id).score }}分</p>
-                          <p class="feedback">评语：{{ getSubmissionForHomework(homework.id).feedback }}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="homework-actions">
-                      <el-button 
-                        v-if="!getSubmissionForHomework(homework.id)" 
-                        type="primary" 
-                        size="small" 
-                        @click="submitHomework(homework.id)"
-                      >
-                        提交作业
-                      </el-button>
-                      <el-tag v-else :type="getSubmissionForHomework(homework.id).status === 'graded' ? 'success' : 'info'" size="small">
-                        {{ getSubmissionForHomework(homework.id).status === 'graded' ? '已批改' : '已提交' }}
-                      </el-tag>
-                    </div>
-                  </div>
-                  <el-empty v-if="toeflWritingHomework.length === 0" description="暂无写作作业" />
-                </div>
-              </el-card>
-            </el-tab-pane>
-          </el-tabs>
+        <div class="exam-date">
+          <span class="label">预计考试：</span>
+          <span class="value">{{ activeExam === 'IELTS' ? '2024-06-15' : '2024-06-29' }}</span>
         </div>
-      </el-tab-pane>
-    </el-tabs>
+      </div>
+    </div>
     
-    <!-- 提交作业对话框 -->
-    <el-dialog
-      v-model="submitDialogVisible"
-      title="提交作业"
-      width="500px"
-    >
-      <el-form :model="submitForm" label-width="80px">
-        <el-form-item label="作业标题">
-          <el-input v-model="submitForm.title" disabled />
-        </el-form-item>
-        <el-form-item label="作业内容">
-          <el-input
-            v-model="submitForm.content"
-            type="textarea"
-            :rows="4"
-            placeholder="请输入作业内容"
-          />
-        </el-form-item>
-        <el-form-item label="上传音频">
-          <el-upload
-            class="upload-demo"
-            :http-request="customUpload"
-            :file-list="fileList"
-            :auto-upload="true"
-            :show-file-list="false"
-            accept="audio/*"
-          >
-            <el-button type="primary">点击上传</el-button>
-            <template #tip>
-              <div class="el-upload__tip">
-                只能上传MP3、WAV等音频文件
-              </div>
+    <div class="main-container">
+      <!-- 左侧功能菜单 -->
+      <div class="left-menu">
+        <el-menu
+          :default-active="activeMenu"
+          class="side-menu"
+          @select="handleMenuSelect"
+        >
+          <el-menu-item index="overview">
+            <el-icon><House /></el-icon>
+            <span>首页（概览）</span>
+          </el-menu-item>
+          <el-menu-item index="level-test">
+            <el-icon><Check /></el-icon>
+            <span>水平测试</span>
+          </el-menu-item>
+          <el-sub-menu index="training">
+            <template #title>
+              <el-icon><Search /></el-icon>
+              <span>分项训练</span>
             </template>
-          </el-upload>
-        </el-form-item>
-        <el-form-item v-if="submitForm.audio">
-          <div class="uploaded-audio">
-            <audio :src="`http://localhost:8080${submitForm.audio}`" controls></audio>
-            <el-button type="danger" size="small" @click="removeAudio">删除音频</el-button>
+            <el-menu-item index="listening">
+              <el-icon><Search /></el-icon>
+              <span>听力</span>
+            </el-menu-item>
+            <el-menu-item index="speaking">
+              <el-icon><Search /></el-icon>
+              <span>口语</span>
+            </el-menu-item>
+            <el-menu-item index="reading">
+              <el-icon><Search /></el-icon>
+              <span>阅读</span>
+            </el-menu-item>
+            <el-menu-item index="writing">
+              <el-icon><Edit /></el-icon>
+              <span>写作</span>
+            </el-menu-item>
+          </el-sub-menu>
+          <el-menu-item index="mock-exam">
+            <el-icon><Document /></el-icon>
+            <span>真题模考</span>
+          </el-menu-item>
+          <el-menu-item index="materials">
+            <el-icon><Document /></el-icon>
+            <span>备考资料</span>
+          </el-menu-item>
+          <el-menu-item index="wrong-answers">
+            <el-icon><Warning /></el-icon>
+            <span>我的错题</span>
+          </el-menu-item>
+        </el-menu>
+      </div>
+      
+      <!-- 右侧内容区 -->
+      <div class="right-content">
+        <!-- 备考概览页 -->
+        <div v-if="activeMenu === 'overview'" class="overview-page">
+          <!-- 模块一：备考进度驾驶舱 -->
+          <div class="dashboard-section">
+            <h2>备考进度驾驶舱</h2>
+            <div class="dashboard-grid">
+              <!-- 学习日历/热力图 -->
+              <el-card class="dashboard-card">
+                <template #header>
+                  <div class="card-header">
+                    <span>学习日历</span>
+                  </div>
+                </template>
+                <div class="calendar-heatmap">
+                  <div class="calendar-grid">
+                    <div v-for="day in 30" :key="day" class="calendar-day" :class="getCalendarDayClass(day)"></div>
+                  </div>
+                  <div class="calendar-legend">
+                    <span>活跃度：</span>
+                    <div class="legend-item"><div class="legend-color" style="background-color: #EBEDF0"></div><span>无</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background-color: #C6E48B"></div><span>低</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background-color: #7BC96F"></div><span>中</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background-color: #239A3B"></div><span>高</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background-color: #196127"></div><span>很高</span></div>
+                  </div>
+                </div>
+              </el-card>
+              
+              <!-- 能力雷达图 -->
+              <el-card class="dashboard-card">
+                <template #header>
+                  <div class="card-header">
+                    <span>能力雷达图</span>
+                  </div>
+                </template>
+                <div class="radar-chart" ref="radarChartRef" style="height: 250px;"></div>
+              </el-card>
+              
+              <!-- 智能推荐 -->
+              <el-card class="dashboard-card recommendation-card">
+                <template #header>
+                  <div class="card-header">
+                    <span>智能推荐</span>
+                  </div>
+                </template>
+                <div class="recommendation-content">
+                  <div class="recommendation-item">
+                    <el-icon class="recommendation-icon"><Search /></el-icon>
+                    <div class="recommendation-text">
+                      <h4>{{ activeExam === 'IELTS' ? '阅读判断题正确率低' : '听力细节题正确率低' }}</h4>
+                      <p>{{ activeExam === 'IELTS' ? '推荐练习《剑桥17-Test 2》' : '推荐练习《TPO 54》' }}</p>
+                    </div>
+                    <el-button type="primary" size="small">开始练习</el-button>
+                  </div>
+                  <div class="recommendation-item">
+                    <el-icon class="recommendation-icon"><Timer /></el-icon>
+                    <div class="recommendation-text">
+                      <h4>今日学习计划</h4>
+                      <p>建议学习时间：60分钟</p>
+                    </div>
+                    <el-button type="success" size="small">开始学习</el-button>
+                  </div>
+                </div>
+              </el-card>
+            </div>
           </div>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="submitDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="confirmSubmit" :loading="submitting">确定提交</el-button>
-        </span>
-      </template>
-    </el-dialog>
+          
+          <!-- 模块二：分项技能训练 -->
+          <div class="training-section">
+            <h2>分项技能训练</h2>
+            <div class="training-grid">
+              <!-- 听力 -->
+              <el-card class="training-card" :class="activeExam === 'IELTS' ? 'ielts-card' : 'toefl-card'">
+                <div class="training-icon listening-icon">
+                  <el-icon><Search /></el-icon>
+                </div>
+                <h3>听力</h3>
+                <div class="training-options">
+                  <el-button type="text" class="training-option">{{ activeExam === 'IELTS' ? '精听训练' : '盲听训练' }}</el-button>
+                  <el-button type="text" class="training-option">真题练习</el-button>
+                  <el-button type="text" class="training-option">场景词汇</el-button>
+                </div>
+              </el-card>
+              
+              <!-- 阅读 -->
+              <el-card class="training-card" :class="activeExam === 'IELTS' ? 'ielts-card' : 'toefl-card'">
+                <div class="training-icon reading-icon">
+                  <el-icon><Search /></el-icon>
+                </div>
+                <h3>阅读</h3>
+                <div class="training-options">
+                  <el-button type="text" class="training-option">题型突破</el-button>
+                  <el-button type="text" class="training-option">{{ activeExam === 'IELTS' ? '长难句分析' : '段落折叠' }}</el-button>
+                  <el-button type="text" class="training-option">{{ activeExam === 'IELTS' ? '高亮划线' : '关键词搜索' }}</el-button>
+                </div>
+              </el-card>
+              
+              <!-- 写作 -->
+              <el-card class="training-card" :class="activeExam === 'IELTS' ? 'ielts-card' : 'toefl-card'">
+                <div class="training-icon writing-icon">
+                  <el-icon><Edit /></el-icon>
+                </div>
+                <h3>写作</h3>
+                <div class="training-options">
+                  <el-button type="text" class="training-option">{{ activeExam === 'IELTS' ? 'Task 1图表' : '综合写作' }}</el-button>
+                  <el-button type="text" class="training-option">{{ activeExam === 'IELTS' ? 'Task 2范文' : '独立写作' }}</el-button>
+                </div>
+              </el-card>
+              
+              <!-- 口语 -->
+              <el-card class="training-card" :class="activeExam === 'IELTS' ? 'ielts-card' : 'toefl-card'">
+                <div class="training-icon speaking-icon">
+                  <el-icon><Search /></el-icon>
+                </div>
+                <h3>口语</h3>
+                <div class="training-options">
+                  <el-button type="text" class="training-option">{{ activeExam === 'IELTS' ? 'Part 1题库' : '独立口语' }}</el-button>
+                  <el-button type="text" class="training-option">发音纠正</el-button>
+                </div>
+              </el-card>
+            </div>
+          </div>
+          
+          <!-- 模块三：真题与模考 -->
+          <div class="exam-section">
+            <h2>真题与模考</h2>
+            <div class="exam-grid">
+              <!-- 热门真题推荐 -->
+              <el-card class="exam-card">
+                <template #header>
+                  <div class="card-header">
+                    <span>热门真题推荐</span>
+                  </div>
+                </template>
+                <div class="exam-list">
+                    <div v-for="(exam, index) in 热门真题" :key="index" class="exam-item">
+                    <div class="exam-info">
+                      <h4>{{ exam.title }}</h4>
+                      <div class="exam-meta">
+                        <el-tag size="small" type="info" class="exam-tag">{{ exam.type }}</el-tag>
+                        <span class="exam-hot">热度: {{ exam.hot }}</span>
+                      </div>
+                    </div>
+                    <el-button type="primary" size="small">开始练习</el-button>
+                  </div>
+                </div>
+              </el-card>
+              
+              <!-- 全真模考入口 -->
+              <el-card class="mock-exam-card" :class="activeExam === 'IELTS' ? 'ielts-card' : 'toefl-card'">
+                <div class="mock-exam-content">
+                  <h3>全真模考</h3>
+                  <p>{{ activeExam === 'IELTS' ? '限时3小时，还原考场环境' : '限时4小时，还原考场环境' }}</p>
+                  <el-button type="primary" size="large" class="mock-exam-btn">开始模考</el-button>
+                  <div class="mock-exam-tips">
+                    <el-icon><Warning /></el-icon>
+                    <span>建议在安静环境中进行，确保网络稳定</span>
+                  </div>
+                </div>
+              </el-card>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 其他页面内容 -->
+        <div v-else class="other-page">
+          <h2>{{ getPageTitle(activeMenu) }}</h2>
+          <el-empty description="页面开发中，敬请期待" />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
-import { api } from '../../api/index'
-import { ElMessage } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
+import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import * as echarts from 'echarts'
+import { 
+  House, 
+  Check, 
+  Search, 
+  Edit, 
+  Document, 
+  Warning, 
+  Timer 
+} from '@element-plus/icons-vue'
 
-// 激活的等级（IELTS或TOEFL）
-const activeLevel = ref('IELTS')
+// 激活的考试类型
+const activeExam = ref('IELTS')
 
-// 激活的标签页
-const activeTab = ref('words')
+// 激活的菜单
+const activeMenu = ref('overview')
 
-// 雅思单词数据
-const ieltsWords = ref([])
-const ieltsAllWords = ref([]) // 存储所有雅思单词用于搜索
-const ieltsSearchKeyword = ref('')
-const ieltsCurrentPage = ref(1)
-const ieltsPageSize = ref(20)
-const ieltsTotalElements = ref(0)
-const ieltsTotalPages = ref(0)
+// 图表引用
+const radarChartRef = ref<HTMLElement>()
+let radarChart: echarts.ECharts | null = null
 
-// 托福单词数据
-const toeflWords = ref([])
-const toeflAllWords = ref([]) // 存储所有托福单词用于搜索
-const toeflSearchKeyword = ref('')
-const toeflCurrentPage = ref(1)
-const toeflPageSize = ref(20)
-const toeflTotalElements = ref(0)
-const toeflTotalPages = ref(0)
+// 热门真题数据
+const 热门真题 = [
+  {
+    title: activeExam.value === 'IELTS' ? '剑桥雅思 17 Test 1' : 'TPO 54',
+    type: '听力',
+    hot: 98
+  },
+  {
+    title: activeExam.value === 'IELTS' ? '剑桥雅思 16 Test 3' : 'TPO 53',
+    type: '阅读',
+    hot: 95
+  },
+  {
+    title: activeExam.value === 'IELTS' ? '剑桥雅思 15 Test 2' : 'TPO 52',
+    type: '写作',
+    hot: 92
+  }
+]
 
-// 检查是否包含中文字符
-const hasChinese = (text: string) => {
-  return /[\u4e00-\u9fa5]/.test(text)
+// 处理菜单选择
+const handleMenuSelect = (index: string) => {
+  activeMenu.value = index
 }
 
-// 过滤后的单词
-const filteredIeltsWords = computed(() => {
-  if (!ieltsSearchKeyword.value) {
-    return ieltsWords.value
+// 获取页面标题
+const getPageTitle = (menuIndex: string) => {
+  const titles: Record<string, string> = {
+    'overview': '备考概览',
+    'level-test': '水平测试',
+    'listening': '听力训练',
+    'speaking': '口语训练',
+    'reading': '阅读训练',
+    'writing': '写作训练',
+    'mock-exam': '真题模考',
+    'materials': '备考资料',
+    'wrong-answers': '我的错题'
   }
-  const keyword = ieltsSearchKeyword.value
-  const wordsToSearch = ieltsAllWords.value.length > 0 ? ieltsAllWords.value : ieltsWords.value
-  if (hasChinese(keyword)) {
-    // 输入中文 → 只搜索中文释义
-    return wordsToSearch.filter((word: any) => 
-      word.chineseMeaning && word.chineseMeaning.includes(keyword)
-    )
-  } else {
-    // 输入英文 → 只搜索英文单词
-    const lowerKeyword = keyword.toLowerCase()
-    return wordsToSearch.filter((word: any) => 
-      word.word.toLowerCase().includes(lowerKeyword)
-    )
+  return titles[menuIndex] || '页面标题'
+}
+
+// 获取日历天的类名
+const getCalendarDayClass = (day: number) => {
+  const activity = Math.floor(Math.random() * 5)
+  return `activity-${activity}`
+}
+
+// 初始化能力雷达图
+const initRadarChart = () => {
+  if (!radarChartRef.value) return
+  
+  radarChart = echarts.init(radarChartRef.value)
+  
+  const option = {
+    tooltip: {
+      trigger: 'item'
+    },
+    legend: {
+      data: ['当前分数', '目标分数'],
+      bottom: 10
+    },
+    radar: {
+      indicator: [
+        { name: '听力', max: activeExam.value === 'IELTS' ? 9 : 30 },
+        { name: '口语', max: activeExam.value === 'IELTS' ? 9 : 30 },
+        { name: '阅读', max: activeExam.value === 'IELTS' ? 9 : 30 },
+        { name: '写作', max: activeExam.value === 'IELTS' ? 9 : 30 }
+      ]
+    },
+    series: [
+      {
+        name: '能力分数',
+        type: 'radar',
+        data: [
+          {
+            value: activeExam.value === 'IELTS' ? [6.0, 5.5, 6.5, 6.0] : [22, 20, 24, 22],
+            name: '当前分数',
+            itemStyle: {
+              color: activeExam.value === 'IELTS' ? '#409EFF' : '#E6A23C'
+            },
+            areaStyle: {
+              color: activeExam.value === 'IELTS' ? 'rgba(64, 158, 255, 0.2)' : 'rgba(230, 162, 60, 0.2)'
+            }
+          },
+          {
+            value: activeExam.value === 'IELTS' ? [7.0, 7.0, 7.0, 7.0] : [26, 26, 26, 26],
+            name: '目标分数',
+            itemStyle: {
+              color: activeExam.value === 'IELTS' ? '#67C23A' : '#F56C6C'
+            },
+            areaStyle: {
+              color: activeExam.value === 'IELTS' ? 'rgba(103, 194, 58, 0.2)' : 'rgba(245, 108, 108, 0.2)'
+            }
+          }
+        ]
+      }
+    ]
   }
-})
+  
+  radarChart.setOption(option)
+}
 
-const filteredToeflWords = computed(() => {
-  if (!toeflSearchKeyword.value) {
-    return toeflWords.value
-  }
-  const keyword = toeflSearchKeyword.value
-  const wordsToSearch = toeflAllWords.value.length > 0 ? toeflAllWords.value : toeflWords.value
-  if (hasChinese(keyword)) {
-    // 输入中文 → 只搜索中文释义
-    return wordsToSearch.filter((word: any) => 
-      word.chineseMeaning && word.chineseMeaning.includes(keyword)
-    )
-  } else {
-    // 输入英文 → 只搜索英文单词
-    const lowerKeyword = keyword.toLowerCase()
-    return wordsToSearch.filter((word: any) => 
-      word.word.toLowerCase().includes(lowerKeyword)
-    )
-  }
-})
+// 监听窗口大小变化
+const handleResize = () => {
+  radarChart?.resize()
+}
 
-// 加载状态
-const loading = ref(false)
-
-// 监听搜索关键词变化，重置页码到第一页
-watch(ieltsSearchKeyword, () => {
-  ieltsCurrentPage.value = 1
-})
-
-watch(toeflSearchKeyword, () => {
-  toeflCurrentPage.value = 1
-})
-
-// 雅思视频数据
-const ieltsSpeakingVideos = ref<any[]>([])
-const ieltsReadingVideos = ref<any[]>([])
-const ieltsListeningVideos = ref<any[]>([])
-const ieltsWritingVideos = ref<any[]>([])
-
-// 托福视频数据
-const toeflSpeakingVideos = ref<any[]>([])
-const toeflReadingVideos = ref<any[]>([])
-const toeflListeningVideos = ref<any[]>([])
-const toeflWritingVideos = ref<any[]>([])
-
-// 作业数据变量
-const ieltsSpeakingHomework = ref<any[]>([])
-const ieltsReadingHomework = ref<any[]>([])
-const ieltsListeningHomework = ref<any[]>([])
-const ieltsWritingHomework = ref<any[]>([])
-const toeflSpeakingHomework = ref<any[]>([])
-const toeflReadingHomework = ref<any[]>([])
-const toeflListeningHomework = ref<any[]>([])
-const toeflWritingHomework = ref<any[]>([])
-
-// 学生作业提交
-const mySubmissions = ref<any[]>([])
-
-// 提交作业对话框状态
-const submitDialogVisible = ref(false)
-const submitForm = ref({ title: '', content: '', audio: '' })
-const submitting = ref(false)
-const currentHomeworkId = ref('')
-const fileList = ref([])
-
-// 从后端API获取所有雅思单词（用于搜索）
-const fetchAllIeltsWords = async () => {
-  try {
-    console.log('Fetching all IELTS words for search...')
-    const response = await fetch('http://localhost:8080/api/words/age-group/21')
-    if (!response.ok) {
-      throw new Error('Failed to fetch all IELTS words')
+// 监听考试类型变化
+const updateRadarChart = () => {
+  nextTick(() => {
+    if (radarChart) {
+      radarChart.dispose()
     }
-    const data = await response.json()
-    const formattedWords = data.map((word: any) => ({
-      id: word.id,
-      word: word.word,
-      phonetic: word.phonetic,
-      definition: word.meaning,
-      chineseMeaning: word.chineseMeaning,
-      example: word.example
-    }))
-    ieltsAllWords.value = formattedWords
-    console.log('All IELTS words loaded:', ieltsAllWords.value.length)
-  } catch (error) {
-    console.error('Failed to fetch all IELTS words:', error)
-  }
+    initRadarChart()
+  })
 }
 
-// 从后端API获取雅思单词数据（带分页）
-const fetchIeltsWords = async () => {
-  loading.value = true
-  try {
-    console.log('Fetching IELTS words from API...')
-    const response = await fetch(`http://localhost:8080/api/words/age-group/21/page?page=${ieltsCurrentPage.value - 1}&size=${ieltsPageSize.value}`)
-    console.log('Response status:', response.status)
-    if (!response.ok) {
-      throw new Error('Failed to fetch IELTS words with status: ' + response.status)
-    }
-    const data = await response.json()
-    console.log('API response:', data)
-    
-    // 转换数据格式
-    const formattedWords = data.content.map((word: any) => ({
-      id: word.id,
-      word: word.word,
-      phonetic: word.phonetic,
-      definition: word.meaning, // 使用meaning字段作为definition
-      chineseMeaning: word.chineseMeaning, // 中文释义
-      example: word.example
-    }))
-    console.log('Formatted IELTS words:', formattedWords)
-    ieltsWords.value = formattedWords
-    ieltsTotalElements.value = data.totalElements
-    ieltsTotalPages.value = data.totalPages
-    
-    console.log('IELTS words updated:', ieltsWords.value)
-    console.log('IELTS total elements:', ieltsTotalElements.value)
-    console.log('IELTS total pages:', ieltsTotalPages.value)
-  } catch (error) {
-    console.error('Failed to fetch IELTS words:', error)
-    // 显示错误信息给用户
-    ElMessage.error('获取雅思单词数据失败，请稍后重试')
-  } finally {
-    loading.value = false
-  }
-}
+// 监听activeExam变化
+import { watch } from 'vue'
+watch(activeExam, updateRadarChart)
 
-// 从后端API获取托福单词数据（带分页）
-const fetchToeflWords = async () => {
-  loading.value = true
-  try {
-    console.log('Fetching TOEFL words from API...')
-    const response = await fetch(`http://localhost:8080/api/words/age-group/22/page?page=${toeflCurrentPage.value - 1}&size=${toeflPageSize.value}`)
-    console.log('Response status:', response.status)
-    if (!response.ok) {
-      throw new Error('Failed to fetch TOEFL words with status: ' + response.status)
-    }
-    const data = await response.json()
-    console.log('API response:', data)
-    
-    // 转换数据格式
-    const formattedWords = data.content.map((word: any) => ({
-      id: word.id,
-      word: word.word,
-      phonetic: word.phonetic,
-      definition: word.meaning, // 使用meaning字段作为definition
-      chineseMeaning: word.chineseMeaning, // 中文释义
-      example: word.example
-    }))
-    console.log('Formatted TOEFL words:', formattedWords)
-    toeflWords.value = formattedWords
-    toeflTotalElements.value = data.totalElements
-    toeflTotalPages.value = data.totalPages
-    
-    console.log('TOEFL words updated:', toeflWords.value)
-    console.log('TOEFL total elements:', toeflTotalElements.value)
-    console.log('TOEFL total pages:', toeflTotalPages.value)
-  } catch (error) {
-    console.error('Failed to fetch TOEFL words:', error)
-    // 显示错误信息给用户
-    ElMessage.error('获取托福单词数据失败，请稍后重试')
-  } finally {
-    loading.value = false
-  }
-}
-
-// 从后端API获取所有托福单词（用于搜索）
-const fetchAllToeflWords = async () => {
-  try {
-    console.log('Fetching all TOEFL words for search...')
-    const response = await fetch('http://localhost:8080/api/words/age-group/22')
-    if (!response.ok) {
-      throw new Error('Failed to fetch all TOEFL words')
-    }
-    const data = await response.json()
-    const formattedWords = data.map((word: any) => ({
-      id: word.id,
-      word: word.word,
-      phonetic: word.phonetic,
-      definition: word.meaning,
-      chineseMeaning: word.chineseMeaning,
-      example: word.example
-    }))
-    toeflAllWords.value = formattedWords
-    console.log('All TOEFL words loaded:', toeflAllWords.value.length)
-  } catch (error) {
-    console.error('Failed to fetch all TOEFL words:', error)
-  }
-}
-
-// 页面加载时获取数据
 onMounted(() => {
-  fetchIeltsWords()
-  fetchToeflWords()
-  fetchAllIeltsWords()
-  fetchAllToeflWords()
-  fetchVideos()
-  fetchHomework()
-  fetchMySubmissions()
+  nextTick(() => {
+    initRadarChart()
+    window.addEventListener('resize', handleResize)
+  })
 })
 
-// 雅思分页处理函数
-const handleIeltsSizeChange = (size: number) => {
-  ieltsPageSize.value = size
-  ieltsCurrentPage.value = 1
-  fetchIeltsWords()
-}
-
-const handleIeltsCurrentChange = (current: number) => {
-  ieltsCurrentPage.value = current
-  fetchIeltsWords()
-}
-
-// 托福分页处理函数
-const handleToeflSizeChange = (size: number) => {
-  toeflPageSize.value = size
-  toeflCurrentPage.value = 1
-  fetchToeflWords()
-}
-
-const handleToeflCurrentChange = (current: number) => {
-  toeflCurrentPage.value = current
-  fetchToeflWords()
-}
-
-// 播放发音
-const playAudio = (wordId: string) => {
-  // 在雅思和托福单词列表中查找单词
-  let word = ieltsWords.value.find((w: any) => w.id === wordId)
-  if (!word) {
-    word = toeflWords.value.find((w: any) => w.id === wordId)
-  }
-  // 如果还没找到，在所有单词列表中查找
-  if (!word) {
-    word = ieltsAllWords.value.find((w: any) => w.id === wordId)
-  }
-  if (!word) {
-    word = toeflAllWords.value.find((w: any) => w.id === wordId)
-  }
-  if (word && 'speechSynthesis' in window) {
-    const utterance = new SpeechSynthesisUtterance(word.word)
-    utterance.lang = 'en-US'
-    utterance.rate = 0.8
-    window.speechSynthesis.speak(utterance)
-  } else {
-    console.log('Browser does not support speech synthesis')
-  }
-}
-
-// 添加到学习列表
-const addToList = async (wordId: string) => {
-  try {
-    console.log('Adding word to learning list with id:', wordId);
-    // 为了测试方便，使用固定的用户ID
-    const userId = 1;
-    const response = await fetch(`http://localhost:8080/api/word-learning-list/add?userId=${userId}&wordId=${wordId}`, {
-      method: 'POST'
-    });
-    console.log('Response status:', response.status);
-    const result = await response.text();
-    console.log('Response result:', result);
-    if (response.ok) {
-      ElMessage.success(result);
-    } else {
-      ElMessage.error(result);
-    }
-  } catch (error) {
-    console.error('Failed to add word to learning list:', error);
-    ElMessage.error('添加失败，请稍后重试');
-  }
-}
-
-// 从后端API获取视频数据
-const fetchVideos = async () => {
-  try {
-    // 调用后端API获取视频数据
-    console.log('Fetching videos from API...')
-    const response = await api.videos.getAll()
-    console.log('API response:', response)
-    
-    // 过滤并分类雅思视频
-    const ieltsVideos = response.filter((video: any) => video.category === '雅思')
-    ieltsSpeakingVideos.value = ieltsVideos.filter((video: any) => video.type === '口语')
-    ieltsReadingVideos.value = ieltsVideos.filter((video: any) => video.type === '阅读')
-    ieltsListeningVideos.value = ieltsVideos.filter((video: any) => video.type === '听力')
-    ieltsWritingVideos.value = ieltsVideos.filter((video: any) => video.type === '写作')
-    console.log('IELTS Speaking videos:', ieltsSpeakingVideos.value)
-    
-    // 过滤并分类托福视频
-    const toeflVideos = response.filter((video: any) => video.category === '托福')
-    toeflSpeakingVideos.value = toeflVideos.filter((video: any) => video.type === '口语')
-    toeflReadingVideos.value = toeflVideos.filter((video: any) => video.type === '阅读')
-    toeflListeningVideos.value = toeflVideos.filter((video: any) => video.type === '听力')
-    toeflWritingVideos.value = toeflVideos.filter((video: any) => video.type === '写作')
-    console.log('TOEFL Speaking videos:', toeflSpeakingVideos.value)
-    
-    // 检查视频URL
-    if (ieltsVideos.length > 0) {
-      console.log('First IELTS video URL:', ieltsVideos[0].videoUrl)
-      console.log('Full IELTS video URL:', `http://localhost:8080${ieltsVideos[0].videoUrl}`)
-    }
-    if (toeflVideos.length > 0) {
-      console.log('First TOEFL video URL:', toeflVideos[0].videoUrl)
-      console.log('Full TOEFL video URL:', `http://localhost:8080${toeflVideos[0].videoUrl}`)
-    }
-  } catch (error) {
-    console.error('Failed to fetch videos:', error)
-    // 使用本地数据作为后备
-    console.log('Using local video data')
-  }
-}
-
-// 从后端API获取作业数据
-const fetchHomework = async () => {
-  try {
-    // 调用后端API获取作业数据
-    console.log('Fetching homework from API...')
-    const ieltsResponse = await api.homeworks.getByCategory('雅思')
-    const toeflResponse = await api.homeworks.getByCategory('托福')
-    console.log('IELTS API response:', ieltsResponse)
-    console.log('TOEFL API response:', toeflResponse)
-    
-    // 按类型分类雅思作业
-    ieltsSpeakingHomework.value = ieltsResponse.filter((homework: any) => homework.type === '口语')
-    ieltsReadingHomework.value = ieltsResponse.filter((homework: any) => homework.type === '阅读')
-    ieltsListeningHomework.value = ieltsResponse.filter((homework: any) => homework.type === '听力')
-    ieltsWritingHomework.value = ieltsResponse.filter((homework: any) => homework.type === '写作')
-    
-    // 按类型分类托福作业
-    toeflSpeakingHomework.value = toeflResponse.filter((homework: any) => homework.type === '口语')
-    toeflReadingHomework.value = toeflResponse.filter((homework: any) => homework.type === '阅读')
-    toeflListeningHomework.value = toeflResponse.filter((homework: any) => homework.type === '听力')
-    toeflWritingHomework.value = toeflResponse.filter((homework: any) => homework.type === '写作')
-    
-    console.log('IELTS Speaking homework:', ieltsSpeakingHomework.value)
-    console.log('TOEFL Speaking homework:', toeflSpeakingHomework.value)
-  } catch (error) {
-    console.error('Failed to fetch homework:', error)
-    // 使用本地数据作为后备
-    console.log('Using local homework data')
-  }
-}
-
-// 获取学生自己的作业提交
-const fetchMySubmissions = async () => {
-  try {
-    console.log('Fetching my submissions from API...')
-    const response = await api.homeworks.getMySubmissions()
-    mySubmissions.value = response
-    console.log('My submissions:', mySubmissions.value)
-  } catch (error) {
-    console.error('Failed to fetch my submissions:', error)
-  }
-}
-
-// 获取某个作业的提交记录
-const getSubmissionForHomework = (homeworkId: any) => {
-  return mySubmissions.value.find((sub: any) => sub.homework?.id === homeworkId)
-}
-
-// 格式化时间
-const formatTime = (time: string) => {
-  if (!time) return ''
-  const date = new Date(time)
-  return date.toLocaleString('zh-CN')
-}
-
-// 合并所有作业
-const getAllHomework = () => {
-  return [
-    ...ieltsSpeakingHomework.value, ...ieltsReadingHomework.value, ...ieltsListeningHomework.value, ...ieltsWritingHomework.value,
-    ...toeflSpeakingHomework.value, ...toeflReadingHomework.value, ...toeflListeningHomework.value, ...toeflWritingHomework.value
-  ]
-}
-
-// 自定义上传方法
-const customUpload = async (options: any) => {
-  try {
-    const response = await api.upload.audio(options.file)
-    if (response.success) {
-      submitForm.value.audio = response.audioUrl
-      ElMessage.success('音频上传成功')
-    } else {
-      ElMessage.error(response.message || '上传失败')
-    }
-  } catch (error) {
-    ElMessage.error('音频上传失败，请重试')
-    console.error('Upload error:', error)
-  }
-}
-
-// 删除音频
-const removeAudio = () => {
-  submitForm.value.audio = ''
-  fileList.value = []
-  ElMessage.success('音频已删除')
-}
-
-// 打开提交作业对话框
-const submitHomework = (homeworkId: string) => {
-  console.log('Submitting homework:', homeworkId)
-  currentHomeworkId.value = homeworkId
-  // 查找作业信息
-  const allHomework = getAllHomework()
-  const homework = allHomework.find(h => h.id === homeworkId)
-  if (homework) {
-    submitForm.value.title = homework.title
-    submitForm.value.content = ''
-    submitForm.value.audio = ''
-    fileList.value = []
-    submitDialogVisible.value = true
-  }
-}
-
-// 确认提交作业
-const confirmSubmit = async () => {
-  if (!submitForm.value.content) {
-    ElMessage.error('请输入作业内容')
-    return
-  }
-  
-  if (!currentHomeworkId.value) {
-    ElMessage.error('作业ID不能为空')
-    return
-  }
-  
-  try {
-    submitting.value = true
-    console.log('Submitting homework with ID:', currentHomeworkId.value)
-    // 调用后端API提交作业
-    const response = await api.homeworks.submit({
-      homeworkId: currentHomeworkId.value,
-      content: submitForm.value.content,
-      audio: submitForm.value.audio
-    })
-    console.log('作业提交成功:', response)
-    ElMessage.success('作业提交成功')
-    submitDialogVisible.value = false
-    // 提交成功后重新加载学生的提交列表
-    await fetchMySubmissions()
-  } catch (error: any) {
-    console.error('作业提交失败:', error)
-    ElMessage.error(error.message || '提交失败')
-  } finally {
-    submitting.value = false
-  }
-}
-
-// 处理视频点击，保存观看历史
-const handleVideoClick = (video: any) => {
-  try {
-    console.log('Handling video click:', video.title)
-    console.log('Video data:', video)
-    const historyKey = 'watchHistory'
-    let history = []
-    // 从localStorage获取现有历史
-    const existingHistory = localStorage.getItem(historyKey)
-    if (existingHistory) {
-      history = JSON.parse(existingHistory)
-      console.log('Existing history:', history)
-    }
-    // 创建新的观看记录
-    const newRecord = {
-      courseId: video.id,
-      courseTitle: video.title,
-      courseImage: video.thumbnail || video.image || '',
-      courseType: video.category === '雅思' ? 'ielts' : 'toefl',
-      videoUrl: video.videoUrl,
-      lastWatchTime: new Date().toISOString(),
-      currentChapter: '1'
-    }
-    console.log('New record:', newRecord)
-    // 移除已存在的相同视频记录
-    history = history.filter((item: any) => item.courseId !== video.id)
-    // 添加新记录到开头
-    history.unshift(newRecord)
-    // 只保留最近4条记录
-    if (history.length > 4) {
-      history = history.slice(0, 4)
-    }
-    // 保存到localStorage
-    localStorage.setItem(historyKey, JSON.stringify(history))
-    console.log('Watch history saved for video:', video.title)
-    console.log('Updated history:', history)
-    // 显示成功消息
-    ElMessage.success('已添加到最近学习')
-  } catch (error) {
-    console.error('Failed to save watch history:', error)
-    ElMessage.error('保存失败，请重试')
-  }
-}
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  radarChart?.dispose()
+})
 </script>
 
 <style scoped>
 .ielts-toefl-english {
-  padding: 20px 0;
+  min-height: 100vh;
+  background-color: #f5f7fa;
 }
 
-.ielts-toefl-english h2 {
-  margin-bottom: 20px;
-  color: #303133;
-}
-
-.module-card {
-  margin-bottom: 30px;
-}
-
-.word-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.word-item {
+/* 顶部导航栏 */
+.top-nav {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  padding: 15px;
-  border: 1px solid #e4e7ed;
+  align-items: center;
+  padding: 16px 24px;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+}
+
+.exam-switcher {
+  display: flex;
+  gap: 12px;
+}
+
+.exam-btn {
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-weight: 500;
+}
+
+.exam-btn.active {
+  color: white;
+}
+
+.exam-info {
+  display: flex;
+  gap: 24px;
+  font-size: 14px;
+}
+
+.exam-info .label {
+  color: #606266;
+}
+
+.exam-info .value {
+  color: #303133;
+  font-weight: 500;
+}
+
+/* 主容器 */
+.main-container {
+  display: flex;
+  padding: 0 24px 24px;
+  gap: 24px;
+}
+
+/* 左侧菜单 */
+.left-menu {
+  width: 200px;
+  background-color: white;
   border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.word-info h3 {
-  margin: 0 0 5px 0;
+.side-menu {
+  border-right: none;
+}
+
+.side-menu .el-menu-item {
+  height: 56px;
+  line-height: 56px;
+  margin: 0 12px;
+  border-radius: 4px;
+}
+
+.side-menu .el-sub-menu__title {
+  height: 56px;
+  line-height: 56px;
+  margin: 0 12px;
+  border-radius: 4px;
+}
+
+/* 右侧内容区 */
+.right-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 概览页 */
+.overview-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 备考进度驾驶舱 */
+.dashboard-section h2,
+.training-section h2,
+.exam-section h2 {
   font-size: 18px;
-  font-weight: 600;
-}
-
-.phonetic {
-  margin: 0 0 5px 0;
-  color: #909399;
-  font-size: 14px;
-}
-
-.meaning {
-  margin: 0 0 5px 0;
-  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 16px;
   color: #303133;
 }
 
-.chinese-meaning {
-  margin: 0 0 5px 0;
-  font-size: 16px;
-  color: #67c23a;
-  font-weight: 600;
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
 }
 
-.example {
-  margin: 0;
-  font-size: 14px;
-  color: #606266;
-  font-style: italic;
-}
-
-.word-actions {
-  display: flex;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.homework-actions {
-  margin-top: 15px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.submission-info {
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px dashed #e4e7ed;
-}
-
-.submission-info h5 {
-  margin: 0 0 10px 0;
-  font-size: 14px;
-  color: #606266;
-  font-weight: 600;
-}
-
-.submission-content {
-  margin: 0 0 10px 0;
-  color: #303133;
-  line-height: 1.6;
-}
-
-.submission-image {
-  margin: 10px 0;
-  max-width: 300px;
-}
-
-.submission-image img {
-  width: 100%;
-  border-radius: 4px;
-}
-
-.submission-time {
-  margin: 10px 0;
-  color: #909399;
-  font-size: 13px;
-}
-
-.grade-result {
-  margin-top: 15px;
-  padding: 15px;
-  background-color: #f0f9eb;
-  border-radius: 4px;
-  border: 1px solid #e1f3d8;
-}
-
-.grade-result .score {
-  color: #67C23A;
-  font-weight: 600;
-  font-size: 16px;
-  margin: 5px 0;
-}
-
-.grade-result .feedback {
-  color: #606266;
-  margin: 5px 0;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-  padding: 10px 0;
+.dashboard-card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .card-header {
@@ -1507,159 +536,335 @@ const handleVideoClick = (video: any) => {
   align-items: center;
 }
 
-.video-grid {
+.card-header span {
+  font-weight: 500;
+  color: #303133;
+}
+
+/* 学习日历 */
+.calendar-heatmap {
+  padding: 16px 0;
+}
+
+.calendar-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 16px;
 }
 
-.video-card {
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.video-thumbnail {
-  position: relative;
-  height: 180px;
-}
-
-.click-hint {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  background: rgba(64, 158, 255, 0.9);
-  color: white;
-  padding: 4px 8px;
+.calendar-day {
+  width: 24px;
+  height: 24px;
   border-radius: 4px;
+  background-color: #EBEDF0;
+}
+
+.calendar-day.activity-1 {
+  background-color: #C6E48B;
+}
+
+.calendar-day.activity-2 {
+  background-color: #7BC96F;
+}
+
+.calendar-day.activity-3 {
+  background-color: #239A3B;
+}
+
+.calendar-day.activity-4 {
+  background-color: #196127;
+}
+
+.calendar-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 12px;
-  z-index: 10;
+  color: #606266;
 }
 
-.video-thumbnail img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.play-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+/* 智能推荐 */
+.recommendation-card {
+  grid-column: 1 / -1;
+}
+
+.recommendation-content {
+  display: flex;
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.recommendation-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  padding: 16px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.recommendation-icon {
+  font-size: 24px;
+  color: #409EFF;
+}
+
+.recommendation-text h4 {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: #303133;
+}
+
+.recommendation-text p {
+  font-size: 12px;
+  color: #606266;
+  margin: 0;
+}
+
+/* 分项技能训练 */
+.training-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.training-card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  text-align: center;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  min-height: 280px;
+}
+
+.training-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.training-card.ielts-card {
+  border-top: 3px solid #409EFF;
+}
+
+.training-card.toefl-card {
+  border-top: 3px solid #F56C6C;
+}
+
+.training-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 48px;
+  margin: 0 auto 16px;
+  font-size: 24px;
 }
 
-.video-info {
-  padding: 15px;
+.training-icon.listening-icon {
+  background-color: #ECF5FF;
+  color: #409EFF;
 }
 
-.video-info h4 {
-  margin: 0 0 10px 0;
+.training-icon.reading-icon {
+  background-color: #F0F9EB;
+  color: #67C23A;
+}
+
+.training-icon.writing-icon {
+  background-color: #FEF3E2;
+  color: #E6A23C;
+}
+
+.training-icon.speaking-icon {
+  background-color: #FDF0F6;
+  color: #F56C6C;
+}
+
+.training-card h3 {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 16px;
   color: #303133;
 }
 
-.video-info p {
-  margin: 0 0 15px 0;
-  color: #606266;
-  font-size: 14px;
-}
-
-.video-type {
-  color: #409EFF;
-  font-size: 12px;
-  margin-top: 10px;
-}
-
-.homework-list {
+.training-options {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 8px;
+  flex-grow: 1;
+  justify-content: space-around;
 }
 
-.homework-item {
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
-  padding: 20px;
-  background: #f5f7fa;
-}
-
-.homework-info h4 {
-  margin: 0 0 10px 0;
-  color: #303133;
-  font-size: 18px;
-}
-
-.homework-content {
-  margin: 0 0 15px 0;
-  color: #606266;
-  line-height: 1.5;
-}
-
-.homework-image {
-  margin: 15px 0;
-  max-width: 300px;
-}
-
-.homework-image img {
-  width: 100%;
-  border-radius: 4px;
-}
-
-.homework-time {
-  margin: 10px 0 0 0;
-  color: #909399;
+.training-option {
   font-size: 14px;
+  color: #606266;
+  padding: 4px 0;
 }
 
-.homework-type {
-  color: #409EFF;
-  font-size: 12px;
-  margin-top: 5px;
+/* 真题与模考 */
+.exam-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
 }
 
-.uploaded-audio {
-  margin: 10px 0;
+.exam-card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.exam-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.exam-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.exam-item:last-child {
+  border-bottom: none;
+}
+
+.exam-info h4 {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: #303133;
+}
+
+.exam-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  font-size: 12px;
 }
 
-.uploaded-audio audio {
-  max-width: 300px;
-  border-radius: 4px;
+.exam-tag {
+  font-size: 10px;
 }
 
-@media screen and (max-width: 768px) {
-  .word-item {
+.exam-hot {
+  color: #606266;
+}
+
+.mock-exam-card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.mock-exam-card.ielts-card {
+  border-left: 4px solid #409EFF;
+}
+
+.mock-exam-card.toefl-card {
+  border-left: 4px solid #F56C6C;
+}
+
+.mock-exam-content {
+  text-align: center;
+  max-width: 200px;
+}
+
+.mock-exam-content h3 {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #303133;
+}
+
+.mock-exam-content p {
+  font-size: 14px;
+  color: #606266;
+  margin-bottom: 24px;
+}
+
+.mock-exam-btn {
+  width: 100%;
+  border-radius: 20px;
+  padding: 10px 0;
+  margin-bottom: 16px;
+}
+
+.mock-exam-tips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #909399;
+}
+
+/* 其他页面 */
+.other-page {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 48px;
+  text-align: center;
+}
+
+.other-page h2 {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 24px;
+  color: #303133;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .main-container {
     flex-direction: column;
-    gap: 10px;
   }
   
-  .word-actions {
-    align-self: flex-end;
+  .left-menu {
+    width: 100%;
   }
   
-  .video-grid {
+  .dashboard-grid,
+  .exam-grid {
     grid-template-columns: 1fr;
   }
   
-  .video-thumbnail {
-    height: 150px;
+  .training-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
   
-  .homework-image {
-    max-width: 100%;
+  .recommendation-content {
+    flex-direction: column;
   }
   
-  .uploaded-image img {
-    max-width: 150px;
+  .exam-info {
+    display: none;
   }
 }
 </style>

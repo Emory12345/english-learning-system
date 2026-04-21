@@ -72,10 +72,11 @@ const routes: RouteRecordRaw[] = [
         name: 'TeenageEnglish15-18',
         component: () => import('../views/student/TeenageEnglish15-18.vue')
       },
+
       {
-        path: 'word-learning-list',
-        name: 'WordLearningList',
-        component: () => import('../views/student/WordLearningList.vue')
+        path: 'cet-english',
+        name: 'CETEnglish',
+        component: () => import('../views/student/CETEnglish.vue')
       },
       {
         path: 'kaoyan-english',
@@ -83,9 +84,29 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/student/KaoyanEnglish.vue')
       },
       {
-        path: 'cet-english',
-        name: 'CETEnglish',
-        component: () => import('../views/student/CETEnglish.vue')
+        path: 'cet4-words',
+        name: 'CET4Words',
+        component: () => import('../views/student/CET4Words.vue')
+      },
+      {
+        path: 'cet6-words',
+        name: 'CET6Words',
+        component: () => import('../views/student/CET6Words.vue')
+      },
+      {
+        path: 'cet4-real-tests',
+        name: 'CET4RealTests',
+        component: () => import('../views/student/CET4RealTests.vue')
+      },
+      {
+        path: 'cet6-real-tests',
+        name: 'CET6RealTests',
+        component: () => import('../views/student/CET6RealTests.vue')
+      },
+      {
+        path: 'kaoyan-words',
+        name: 'KaoyanWords',
+        component: () => import('../views/student/KaoyanWords.vue')
       },
       {
         path: 'ielts-toefl-english',

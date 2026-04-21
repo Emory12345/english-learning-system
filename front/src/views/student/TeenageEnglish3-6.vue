@@ -6,22 +6,36 @@
     <!-- 学习模块标签页 -->
     <el-tabs v-model="activeTab" type="border-card">
       <el-tab-pane label="单词认知" name="words">
-        <el-card class="module-card">
+        <el-card class="module-card apple-design">
           <template #header>
             <div class="card-header">
               <span>基础单词认知</span>
-              <el-tag type="success">启蒙阶段</el-tag>
+              <el-tag type="primary" effect="light">启蒙阶段</el-tag>
             </div>
           </template>
-          <div class="word-grid">
-            <div v-for="word in words" :key="word.id" class="word-card" @click="playAudio(word.id)">
-              <div class="word-info">
-                <h3>{{ word.word }}</h3>
-                <p class="phonetic">{{ word.phonetic }}</p>
-                <p class="meaning">{{ word.meaning }}</p>
-              </div>
-              <div class="play-icon">
-                <el-icon><VideoPlay /></el-icon>
+          
+          <!-- 分类筛选器 -->
+          <div class="category-filter">
+            <el-radio-group v-model="selectedCategory" size="large">
+              <el-radio-button v-for="category in categories" :key="category.value" :label="category.value">
+                {{ category.label }}
+              </el-radio-button>
+            </el-radio-group>
+          </div>
+          
+          <div class="word-slider-container apple-design">
+            <div class="word-scroll-container">
+              <div class="word-grid apple-design">
+                <div v-for="word in filteredWords" :key="word.id" class="word-card apple-design" @click="playAudio(word.id)" :style="{ backgroundImage: `url(${getImageUrl(word.word)})` }">
+                  <div class="word-info apple-design">
+                    <h3>{{ word.word }}</h3>
+                    <p class="phonetic">{{ word.phonetic }}</p>
+                    <p class="meaning">{{ word.meaning }}</p>
+                  </div>
+                  <div class="play-icon apple-design">
+                    <el-icon><VideoPlay /></el-icon>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -245,11 +259,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { VideoPlay } from '@element-plus/icons-vue'
+import { ref, onMounted, computed } from 'vue'
+import { VideoPlay, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import { api } from '../../api'
 import { ElMessage } from 'element-plus'
 import { useWatchHistory } from '../../composables/useWatchHistory'
+
+const wordGrid = ref<HTMLElement | null>(null)
 
 // 激活的标签页
 const activeTab = ref('words')
@@ -269,59 +285,81 @@ const handleVideoClick = (video: any) => {
   }
 }
 
+// 分类选项
+const categories = ref([
+  { value: 'all', label: '全部' },
+  { value: 'animal', label: '动物' },
+  { value: 'fruit', label: '水果' },
+  { value: 'number', label: '数字' },
+  { value: 'color', label: '颜色' },
+  { value: 'nature', label: '自然' }
+])
+
+// 当前选中的分类
+const selectedCategory = ref('all')
+
 // 单词数据 - 使用WordService中的单词列表
 const words = ref([
-  { id: '1', word: 'apple', phonetic: '/ˈæpl/', meaning: '苹果' },
-  { id: '2', word: 'banana', phonetic: '/bəˈnɑːnə/', meaning: '香蕉' },
-  { id: '3', word: 'cat', phonetic: '/kæt/', meaning: '猫' },
-  { id: '4', word: 'dog', phonetic: '/dɒɡ/', meaning: '狗' },
-  { id: '5', word: 'sun', phonetic: '/sʌn/', meaning: '太阳' },
-  { id: '6', word: 'moon', phonetic: '/muːn/', meaning: '月亮' },
-  { id: '7', word: 'bird', phonetic: '/bɜːd/', meaning: '鸟' },
-  { id: '8', word: 'fish', phonetic: '/fɪʃ/', meaning: '鱼' },
-  { id: '9', word: 'elephant', phonetic: '/ˈelɪfənt/', meaning: '大象' },
-  { id: '10', word: 'lion', phonetic: '/ˈlaɪən/', meaning: '狮子' },
-  { id: '11', word: 'tiger', phonetic: '/ˈtaɪɡə/', meaning: '老虎' },
-  { id: '12', word: 'monkey', phonetic: '/ˈmʌŋki/', meaning: '猴子' },
-  { id: '13', word: 'rabbit', phonetic: '/ˈræbɪt/', meaning: '兔子' },
-  { id: '14', word: 'mouse', phonetic: '/maʊs/', meaning: '老鼠' },
-  { id: '15', word: 'horse', phonetic: '/hɔːs/', meaning: '马' },
-  { id: '16', word: 'cow', phonetic: '/kaʊ/', meaning: '奶牛' },
-  { id: '17', word: 'sheep', phonetic: '/ʃiːp/', meaning: '绵羊' },
-  { id: '18', word: 'pig', phonetic: '/pɪɡ/', meaning: '猪' },
-  { id: '19', word: 'duck', phonetic: '/dʌk/', meaning: '鸭子' },
-  { id: '20', word: 'chicken', phonetic: '/ˈtʃɪkɪn/', meaning: '鸡' },
-  { id: '21', word: 'orange', phonetic: '/ˈɒrɪndʒ/', meaning: '橙子' },
-  { id: '22', word: 'grape', phonetic: '/ɡreɪp/', meaning: '葡萄' },
-  { id: '23', word: 'strawberry', phonetic: '/ˈstrɔːbəri/', meaning: '草莓' },
-  { id: '24', word: 'watermelon', phonetic: '/ˈwɔːtəmelən/', meaning: '西瓜' },
-  { id: '25', word: 'pineapple', phonetic: '/ˈpaɪnæpl/', meaning: '菠萝' },
-  { id: '26', word: 'peach', phonetic: '/piːtʃ/', meaning: '桃子' },
-  { id: '27', word: 'pear', phonetic: '/peə/', meaning: '梨' },
-  { id: '28', word: 'lemon', phonetic: '/ˈlemən/', meaning: '柠檬' },
-  { id: '29', word: 'cherry', phonetic: '/ˈtʃeri/', meaning: '樱桃' },
-  { id: '30', word: 'mango', phonetic: '/ˈmæŋɡəʊ/', meaning: '芒果' },
-  { id: '31', word: 'red', phonetic: '/red/', meaning: '红色' },
-  { id: '32', word: 'blue', phonetic: '/bluː/', meaning: '蓝色' },
-  { id: '33', word: 'green', phonetic: '/ɡriːn/', meaning: '绿色' },
-  { id: '34', word: 'yellow', phonetic: '/ˈjeləʊ/', meaning: '黄色' },
-  { id: '35', word: 'purple', phonetic: '/ˈpɜːpl/', meaning: '紫色' },
-  { id: '36', word: 'pink', phonetic: '/pɪŋk/', meaning: '粉色' },
-  { id: '37', word: 'black', phonetic: '/blæk/', meaning: '黑色' },
-  { id: '38', word: 'white', phonetic: '/waɪt/', meaning: '白色' },
-  { id: '39', word: 'brown', phonetic: '/braʊn/', meaning: '棕色' },
-  { id: '40', word: 'gray', phonetic: '/ɡreɪ/', meaning: '灰色' },
-  { id: '41', word: 'one', phonetic: '/wʌn/', meaning: '一' },
-  { id: '42', word: 'two', phonetic: '/tuː/', meaning: '二' },
-  { id: '43', word: 'three', phonetic: '/θriː/', meaning: '三' },
-  { id: '44', word: 'four', phonetic: '/fɔː/', meaning: '四' },
-  { id: '45', word: 'five', phonetic: '/faɪv/', meaning: '五' },
-  { id: '46', word: 'six', phonetic: '/sɪks/', meaning: '六' },
-  { id: '47', word: 'seven', phonetic: '/ˈsevn/', meaning: '七' },
-  { id: '48', word: 'eight', phonetic: '/eɪt/', meaning: '八' },
-  { id: '49', word: 'nine', phonetic: '/naɪn/', meaning: '九' },
-  { id: '50', word: 'ten', phonetic: '/ten/', meaning: '十' }
+  { id: '1', word: 'apple', phonetic: '/ˈæpl/', meaning: '苹果', image: '@/assets/images/apple.jpg', category: 'fruit' },
+  { id: '2', word: 'banana', phonetic: '/bəˈnɑːnə/', meaning: '香蕉', image: '@/assets/images/banana.jpg', category: 'fruit' },
+  { id: '3', word: 'cat', phonetic: '/kæt/', meaning: '猫', image: '@/assets/images/cat.jpg', category: 'animal' },
+  { id: '4', word: 'dog', phonetic: '/dɒɡ/', meaning: '狗', image: '@/assets/images/dog.jpg', category: 'animal' },
+  { id: '5', word: 'sun', phonetic: '/sʌn/', meaning: '太阳', image: '@/assets/images/sun.jpg', category: 'nature' },
+  { id: '6', word: 'moon', phonetic: '/muːn/', meaning: '月亮', image: '@/assets/images/moon.jpg', category: 'nature' },
+  { id: '7', word: 'bird', phonetic: '/bɜːd/', meaning: '鸟', image: '@/assets/images/bird.jpg', category: 'animal' },
+  { id: '8', word: 'fish', phonetic: '/fɪʃ/', meaning: '鱼', image: '@/assets/images/fish.jpg', category: 'animal' },
+  { id: '9', word: 'elephant', phonetic: '/ˈelɪfənt/', meaning: '大象', image: '@/assets/images/elephant.jpg', category: 'animal' },
+  { id: '10', word: 'lion', phonetic: '/ˈlaɪən/', meaning: '狮子', image: '@/assets/images/lion.jpg', category: 'animal' },
+  { id: '11', word: 'tiger', phonetic: '/ˈtaɪɡə/', meaning: '老虎', image: '@/assets/images/tiger.jpg', category: 'animal' },
+  { id: '12', word: 'monkey', phonetic: '/ˈmʌŋki/', meaning: '猴子', image: '@/assets/images/monkey.jpg', category: 'animal' },
+  { id: '13', word: 'rabbit', phonetic: '/ˈræbɪt/', meaning: '兔子', image: '@/assets/images/rabbit.jpg', category: 'animal' },
+  { id: '14', word: 'mouse', phonetic: '/maʊs/', meaning: '老鼠', image: '@/assets/images/mouse.jpg', category: 'animal' },
+  { id: '15', word: 'horse', phonetic: '/hɔːs/', meaning: '马', image: '@/assets/images/horse.jpg', category: 'animal' },
+  { id: '16', word: 'cow', phonetic: '/kaʊ/', meaning: '奶牛', image: '@/assets/images/cow.jpg', category: 'animal' },
+  { id: '17', word: 'sheep', phonetic: '/ʃiːp/', meaning: '绵羊', image: '@/assets/images/sheep.jpg', category: 'animal' },
+  { id: '18', word: 'pig', phonetic: '/pɪɡ/', meaning: '猪', image: '@/assets/images/pig.jpg', category: 'animal' },
+  { id: '19', word: 'duck', phonetic: '/dʌk/', meaning: '鸭子', image: '@/assets/images/duck.jpg', category: 'animal' },
+  { id: '20', word: 'chicken', phonetic: '/ˈtʃɪkɪn/', meaning: '鸡', image: '@/assets/images/chicken.jpg', category: 'animal' },
+  { id: '51', word: 'bear', phonetic: '/beər/', meaning: '熊', image: '@/assets/images/bear.jpg', category: 'animal' },
+  { id: '21', word: 'orange', phonetic: '/ˈɒrɪndʒ/', meaning: '橙子', image: '@/assets/images/orange.jpg', category: 'fruit' },
+  { id: '22', word: 'grape', phonetic: '/ɡreɪp/', meaning: '葡萄', image: '@/assets/images/grape.jpg', category: 'fruit' },
+  { id: '23', word: 'strawberry', phonetic: '/ˈstrɔːbəri/', meaning: '草莓', image: '@/assets/images/strawberry.jpg', category: 'fruit' },
+  { id: '24', word: 'watermelon', phonetic: '/ˈwɔːtəmelən/', meaning: '西瓜', image: '@/assets/images/watermelon.jpg', category: 'fruit' },
+  { id: '25', word: 'pineapple', phonetic: '/ˈpaɪnæpl/', meaning: '菠萝', image: '@/assets/images/pineapple.jpg', category: 'fruit' },
+  { id: '26', word: 'peach', phonetic: '/piːtʃ/', meaning: '桃子', image: '@/assets/images/peach.jpg', category: 'fruit' },
+  { id: '27', word: 'pear', phonetic: '/peə/', meaning: '梨', image: '@/assets/images/pear.jpg', category: 'fruit' },
+  { id: '28', word: 'lemon', phonetic: '/ˈlemən/', meaning: '柠檬', image: '@/assets/images/lemon.jpg', category: 'fruit' },
+  { id: '29', word: 'cherry', phonetic: '/ˈtʃeri/', meaning: '樱桃', image: '@/assets/images/cherry.jpg', category: 'fruit' },
+  { id: '30', word: 'mango', phonetic: '/ˈmæŋɡəʊ/', meaning: '芒果', image: '@/assets/images/mango.jpg', category: 'fruit' },
+  { id: '31', word: 'red', phonetic: '/red/', meaning: '红色', image: '@/assets/images/red.jpg', category: 'color' },
+  { id: '32', word: 'blue', phonetic: '/bluː/', meaning: '蓝色', image: '@/assets/images/blue.jpg', category: 'color' },
+  { id: '33', word: 'green', phonetic: '/ɡriːn/', meaning: '绿色', image: '@/assets/images/green.jpg', category: 'color' },
+  { id: '34', word: 'yellow', phonetic: '/ˈjeləʊ/', meaning: '黄色', image: '@/assets/images/yellow.jpg', category: 'color' },
+  { id: '35', word: 'purple', phonetic: '/ˈpɜːpl/', meaning: '紫色', image: '@/assets/images/purple.jpg', category: 'color' },
+  { id: '36', word: 'pink', phonetic: '/pɪŋk/', meaning: '粉色', image: '@/assets/images/pink.jpg', category: 'color' },
+  { id: '37', word: 'black', phonetic: '/blæk/', meaning: '黑色', image: '@/assets/images/black.jpg', category: 'color' },
+  { id: '38', word: 'white', phonetic: '/waɪt/', meaning: '白色', image: '@/assets/images/white.jpg', category: 'color' },
+  { id: '39', word: 'brown', phonetic: '/braʊn/', meaning: '棕色', image: '@/assets/images/brown.jpg', category: 'color' },
+  { id: '40', word: 'gray', phonetic: '/ɡreɪ/', meaning: '灰色', image: '@/assets/images/gray.jpg', category: 'color' },
+  { id: '41', word: 'one', phonetic: '/wʌn/', meaning: '一', image: '@/assets/images/one.jpg', category: 'number' },
+  { id: '42', word: 'two', phonetic: '/tuː/', meaning: '二', image: '@/assets/images/two.jpg', category: 'number' },
+  { id: '43', word: 'three', phonetic: '/θriː/', meaning: '三', image: '@/assets/images/three.jpg', category: 'number' },
+  { id: '44', word: 'four', phonetic: '/fɔː/', meaning: '四', image: '@/assets/images/four.jpg', category: 'number' },
+  { id: '45', word: 'five', phonetic: '/faɪv/', meaning: '五', image: '@/assets/images/five.jpg', category: 'number' },
+  { id: '46', word: 'six', phonetic: '/sɪks/', meaning: '六', image: '@/assets/images/six.jpg', category: 'number' },
+  { id: '47', word: 'seven', phonetic: '/ˈsevn/', meaning: '七', image: '@/assets/images/seven.jpg', category: 'number' },
+  { id: '48', word: 'eight', phonetic: '/eɪt/', meaning: '八', image: '@/assets/images/eight.jpg', category: 'number' },
+  { id: '49', word: 'nine', phonetic: '/naɪn/', meaning: '九', image: '@/assets/images/nine.jpg', category: 'number' },
+  { id: '50', word: 'ten', phonetic: '/ten/', meaning: '十', image: '@/assets/images/ten.jpg', category: 'number' }
 ])
+
+// 根据分类筛选单词
+const filteredWords = computed(() => {
+  if (selectedCategory.value === 'all') {
+    return words.value
+  }
+  return words.value.filter(word => word.category === selectedCategory.value)
+})
 
 // 从后端API获取单词数据
 const fetchWords = async () => {
@@ -425,7 +463,43 @@ onMounted(() => {
   fetchVideos()
   fetchHomework()
   fetchMySubmissions()
+  // 获取滚动容器
+  setTimeout(() => {
+    if (!wordGrid.value) {
+      wordGrid.value = document.querySelector('.word-grid') as HTMLElement
+    }
+  }, 100)
 })
+
+// 滚动功能
+const scrollLeft = () => {
+  if (wordGrid.value) {
+    const currentTransform = wordGrid.value.style.transform || 'translateX(0)'
+    const currentX = parseInt(currentTransform.replace('translateX(', '').replace(')', '')) || 0
+    wordGrid.value.style.transform = `translateX(${currentX + 300}px)`
+  }
+}
+
+const scrollRight = () => {
+  if (wordGrid.value) {
+    const currentTransform = wordGrid.value.style.transform || 'translateX(0)'
+    const currentX = parseInt(currentTransform.replace('translateX(', '').replace(')', '')) || 0
+    wordGrid.value.style.transform = `translateX(${currentX - 300}px)`
+  }
+}
+
+// 获取图片URL
+const getImageUrl = (word: string) => {
+  try {
+    // 尝试导入图片
+    const imageUrl = new URL(`../../assets/images/${word}.jpg`, import.meta.url)
+    return imageUrl.href
+  } catch (error) {
+    // 如果图片不存在，返回一个默认图片或空字符串
+    console.warn(`Image not found for word: ${word}`)
+    return ''
+  }
+}
 
 // 播放单词发音
 const playAudio = (wordId: string) => {
@@ -581,20 +655,179 @@ const confirmSubmit = async () => {
   align-items: center;
 }
 
-.word-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+/* Apple Design 风格样式 */
+.apple-design {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-.word-card {
-  border: 2px solid #e4e7ed;
-  border-radius: 12px;
+.word-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.word-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.category-filter {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.word-slider-container.apple-design {
+  position: relative;
+  overflow: hidden;
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   padding: 20px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.word-scroll-container {
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+}
+
+.word-grid.apple-design {
+  display: flex;
+  gap: 25px;
+  width: 100%;
+  padding: 20px;
+  transition: transform 0.3s ease;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.word-card.apple-design {
+  border: none;
+  border-radius: 16px;
+  padding: 60px 25px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
+  width: calc(33.333% - 17px);
+  height: 250px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+
+
+.word-card.apple-design::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.2), rgba(0, 0, 0, 0.4));
+  z-index: 1;
+}
+
+.word-card.apple-design:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.word-info.apple-design {
+  position: relative;
+  z-index: 2;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.word-info.apple-design h3 {
+  font-size: 36px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  letter-spacing: 0.5px;
+}
+
+.word-info.apple-design .phonetic {
+  font-size: 20px;
+  margin: 0 0 12px 0;
+  opacity: 0.9;
+}
+
+.word-info.apple-design .meaning {
+  font-size: 24px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.play-icon.apple-design {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #007aff;
+  z-index: 3;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.play-icon.apple-design:hover {
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 1);
+}
+
+.module-card.apple-design {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.card-header span {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1c1c1e;
+}
+
+.el-tabs.el-tabs--border-card {
+  border: none;
+  box-shadow: none;
+}
+
+.el-tabs__header {
+  margin-bottom: 20px;
+}
+
+.el-tab-pane {
+  padding: 0;
 }
 
 .word-card:hover {
