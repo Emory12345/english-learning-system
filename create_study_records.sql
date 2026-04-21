@@ -1,0 +1,29 @@
+-- 创建学习记录表
+DROP TABLE IF EXISTS `study_records`;
+CREATE TABLE `study_records`  (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` bigint NOT NULL,
+  `study_date` date NOT NULL,
+  `study_minutes` int NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `user_id`(`user_id` ASC) USING BTREE,
+  CONSTRAINT `study_records_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- 添加测试数据
+INSERT INTO `study_records` VALUES (1, 3, DATE_SUB(CURDATE(), INTERVAL 6 DAY), 30);
+INSERT INTO `study_records` VALUES (2, 3, DATE_SUB(CURDATE(), INTERVAL 5 DAY), 45);
+INSERT INTO `study_records` VALUES (3, 3, DATE_SUB(CURDATE(), INTERVAL 4 DAY), 60);
+INSERT INTO `study_records` VALUES (4, 3, DATE_SUB(CURDATE(), INTERVAL 3 DAY), 35);
+INSERT INTO `study_records` VALUES (5, 3, DATE_SUB(CURDATE(), INTERVAL 2 DAY), 50);
+INSERT INTO `study_records` VALUES (6, 3, DATE_SUB(CURDATE(), INTERVAL 1 DAY), 70);
+INSERT INTO `study_records` VALUES (7, 3, CURDATE(), 40);
+
+-- 为其他学生添加测试数据
+INSERT INTO `study_records` VALUES (8, 4, DATE_SUB(CURDATE(), INTERVAL 6 DAY), 25);
+INSERT INTO `study_records` VALUES (9, 4, DATE_SUB(CURDATE(), INTERVAL 5 DAY), 40);
+INSERT INTO `study_records` VALUES (10, 4, DATE_SUB(CURDATE(), INTERVAL 4 DAY), 55);
+INSERT INTO `study_records` VALUES (11, 4, DATE_SUB(CURDATE(), INTERVAL 3 DAY), 30);
+INSERT INTO `study_records` VALUES (12, 4, DATE_SUB(CURDATE(), INTERVAL 2 DAY), 45);
+INSERT INTO `study_records` VALUES (13, 4, DATE_SUB(CURDATE(), INTERVAL 1 DAY), 65);
+INSERT INTO `study_records` VALUES (14, 4, CURDATE(), 35);
