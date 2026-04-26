@@ -10,8 +10,6 @@ async function request<T>(url: string, options: RequestInit & { params?: Record<
     'Content-Type': 'application/json',
     ...options.headers,
   };
-  
-  // 处理查询参数
   let requestUrl = url;
   if (options.params) {
     const searchParams = new URLSearchParams();
@@ -205,9 +203,9 @@ export const api = {
       method: 'GET',
     }),
     getPostById: (postId: string) => request<any>(`/community/posts/${postId}`),
-    createPost: (title: string, content: string, category: string) => request<any>('/community/posts', {
+    createPost: (title: string, content: string, category: string, extras?: { imageUrls?: string; videoUrl?: string; documentUrls?: string; location?: string }) => request<any>('/community/posts', {
       method: 'POST',
-      body: JSON.stringify({ title, content, category }),
+      body: JSON.stringify({ title, content, category, ...extras }),
     }),
     deletePost: (postId: string) => request<{ message: string }>(`/community/posts/${postId}`, {
       method: 'DELETE',
@@ -372,5 +370,22 @@ export const api = {
         },
       });
     },
+  },
+
+  // 四级真题作业相关
+  cet4Homework: {
+    submit: (data: { homeworkId: number; studentAnswer: string; subjectiveAnswer?: string; subjectiveImage?: string }) =>
+      request<any>('/api/cet4-homework/submit', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    getMySubmissions: () => request<any>('/api/cet4-homework/my-submissions'),
+    getTeacherSubmissions: () => request<any>('/api/cet4-homework/teacher/submissions'),
+    grade: (data: { submissionId: number; score: number; feedback?: string }) => request<any>('/api/cet4-homework/grade', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    checkSubmitted: (homeworkId: number) => request<any>(`/api/cet4-homework/check-submitted/${homeworkId}`),
+    getAnswer: (homeworkId: number) => request<any>(`/api/cet4-homework/answer/${homeworkId}`),
   },
 };

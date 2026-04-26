@@ -8,7 +8,7 @@
         <el-form-item>
           <el-input
             v-model="postForm.title"
-            placeholder="请输入帖子标题"
+            placeholder="有什么新鲜事想分享给大家？"
             size="large"
           />
         </el-form-item>
@@ -17,14 +17,111 @@
             v-model="postForm.content"
             type="textarea"
             :rows="4"
-            placeholder="请输入帖子内容"
+            placeholder="分享你的学习心得、经验或问题..."
           />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="publishPost" :loading="publishing">发布帖子</el-button>
+          <div class="post-actions-row">
+            <!-- 功能按钮 -->
+            <div class="action-buttons">
+              <el-button
+                type="text"
+                @click="selectImage"
+                title="添加图片"
+              >
+                <el-icon><Picture /></el-icon>
+                <span>图片</span>
+              </el-button>
+              <el-button
+                type="text"
+                @click="selectVideo"
+                title="添加视频"
+              >
+                <el-icon><VideoCamera /></el-icon>
+                <span>视频</span>
+              </el-button>
+              <el-button
+                type="text"
+                @click="selectDocument"
+                title="添加文档"
+              >
+                <el-icon><Document /></el-icon>
+                <span>文档</span>
+              </el-button>
+              <el-button
+                type="text"
+                @click="selectLocation"
+                title="添加地点"
+              >
+                <el-icon><Location /></el-icon>
+                <span>地点</span>
+              </el-button>
+            </div>
+            <!-- 发布按钮 -->
+            <el-button type="primary" @click="publishPost" :loading="publishing">发布帖子</el-button>
+          </div>
+        </el-form-item>
+        <!-- 附件预览 -->
+        <el-form-item v-if="attachments.length > 0">
+          <div class="attachments-preview">
+            <div v-for="(attachment, index) in attachments" :key="index" class="attachment-item">
+              <div class="attachment-info">
+                <el-icon v-if="attachment.type === 'image'">
+                  <Picture />
+                </el-icon>
+                <el-icon v-else-if="attachment.type === 'video'">
+                  <VideoCamera />
+                </el-icon>
+                <el-icon v-else-if="attachment.type === 'document'">
+                  <Document />
+                </el-icon>
+                <span class="attachment-name">{{ attachment.name }}</span>
+              </div>
+              <el-button type="text" size="small" @click="removeAttachment(index)">
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </div>
+          </div>
+        </el-form-item>
+        <!-- 地点信息 -->
+        <el-form-item v-if="postForm.location">
+          <div class="location-info">
+            <el-icon><Location /></el-icon>
+            <span>{{ postForm.location }}</span>
+            <el-button type="text" size="small" @click="removeLocation">
+              <el-icon><Delete /></el-icon>
+            </el-button>
+          </div>
         </el-form-item>
       </el-form>
+      <!-- 文件上传输入 -->
+      <input
+        ref="fileInput"
+        type="file"
+        multiple
+        style="display: none"
+        @change="handleFileSelect"
+      />
     </el-card>
+    
+    <!-- 地点选择对话框 -->
+    <el-dialog
+      v-model="locationDialogVisible"
+      title="选择地点"
+      width="400px"
+    >
+      <el-input
+        v-model="locationInput"
+        placeholder="请输入地点"
+        style="margin-bottom: 20px"
+      />
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="locationDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmLocation">确认</el-button>
+        </div>
+      </template>
+    </el-dialog>
     
     <!-- 帖子列表 -->
     <el-card class="posts-card">
@@ -114,18 +211,27 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { ChatDotRound, Star, Collection } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox, ElDialog, ElInput } from 'element-plus'
+import { ChatDotRound, Star, Collection, Picture, VideoCamera, Document, Location, Delete } from '@element-plus/icons-vue'
 import { api } from '@/api'
 
 const publishing = ref(false)
 const expandedPostId = ref<string | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
 
 // 发布帖子表单
 const postForm = ref({
   title: '',
-  content: ''
+  content: '',
+  location: ''
 })
+
+// 附件列表
+const attachments = ref<any[]>([])
+
+// 地点选择对话框
+const locationDialogVisible = ref(false)
+const locationInput = ref('')
 
 const API_BASE_URL = 'http://localhost:8080'
 
@@ -161,15 +267,109 @@ const fetchPosts = async () => {
   }
 }
 
+// 选择图片
+const selectImage = () => {
+  if (fileInput.value) {
+    fileInput.value.accept = 'image/*'
+    fileInput.value.multiple = true
+    fileInput.value.click()
+  }
+}
+
+// 选择视频
+const selectVideo = () => {
+  if (fileInput.value) {
+    fileInput.value.accept = 'video/*'
+    fileInput.value.multiple = false
+    fileInput.value.click()
+  }
+}
+
+// 选择文档
+const selectDocument = () => {
+  if (fileInput.value) {
+    fileInput.value.accept = '.doc,.docx,.pdf,.txt,.md'
+    fileInput.value.multiple = true
+    fileInput.value.click()
+  }
+}
+
+// 处理文件选择
+const handleFileSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const files = target.files
+  if (files) {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      let type = 'document'
+      if (file.type.startsWith('image/')) {
+        type = 'image'
+      } else if (file.type.startsWith('video/')) {
+        type = 'video'
+      }
+      attachments.value.push({
+        name: file.name,
+        type: type,
+        file: file
+      })
+    }
+  }
+  // 清空input的值，以便可以重复选择同一个文件
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+// 移除附件
+const removeAttachment = (index: number) => {
+  attachments.value.splice(index, 1)
+}
+
+// 选择地点
+const selectLocation = () => {
+  locationDialogVisible.value = true
+}
+
+// 确认地点
+const confirmLocation = () => {
+  if (locationInput.value.trim()) {
+    postForm.value.location = locationInput.value.trim()
+    locationDialogVisible.value = false
+    locationInput.value = ''
+  } else {
+    ElMessage.error('请输入地点')
+  }
+}
+
+// 移除地点
+const removeLocation = () => {
+  postForm.value.location = ''
+}
+
 // 发布帖子
 const publishPost = async () => {
   if (postForm.value.title && postForm.value.content) {
     try {
       publishing.value = true
+      
+      // 处理附件上传
+      if (attachments.value.length > 0) {
+        for (const attachment of attachments.value) {
+          if (attachment.type === 'image') {
+            await api.upload.image(attachment.file)
+          } else if (attachment.type === 'video') {
+            await api.upload.video(attachment.file, '', '', '', '')
+          }
+          // 文档上传暂时跳过
+        }
+      }
+      
       await api.community.createPost(postForm.value.title, postForm.value.content, '')
       ElMessage.success('发布成功')
       postForm.value.title = ''
       postForm.value.content = ''
+      postForm.value.location = ''
+      attachments.value = []
       // 重新获取帖子数据
       await fetchPosts()
     } catch (error: any) {
@@ -268,6 +468,99 @@ onMounted(() => {
 
 .posts-card {
   margin-bottom: 20px;
+}
+
+/* 功能按钮行 */
+.post-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 20px;
+}
+
+.action-buttons .el-button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #606266;
+}
+
+.action-buttons .el-button:hover {
+  color: #409eff;
+}
+
+.action-buttons .el-icon {
+  font-size: 16px;
+}
+
+/* 附件预览 */
+.attachments-preview {
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  padding: 10px;
+  background-color: #f9fafc;
+}
+
+.attachment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #e4e7ed;
+}
+
+.attachment-item:last-child {
+  border-bottom: none;
+}
+
+.attachment-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.attachment-info .el-icon {
+  font-size: 18px;
+  color: #409eff;
+}
+
+.attachment-name {
+  font-size: 14px;
+  color: #606266;
+}
+
+/* 地点信息 */
+.location-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background-color: #f9fafc;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+}
+
+.location-info .el-icon {
+  font-size: 16px;
+  color: #409eff;
+}
+
+.location-info span {
+  font-size: 14px;
+  color: #606266;
+  flex: 1;
+}
+
+/* 对话框样式 */
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .posts-list {

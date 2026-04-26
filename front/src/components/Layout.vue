@@ -88,7 +88,7 @@
         <el-dropdown v-if="userStore.isLoggedIn" trigger="click" class="user-dropdown">
           <div class="user-info">
             <span class="user-name">{{ userStore.userInfo.name || '用户' }}</span>
-            <el-avatar size="small" :src="userStore.userInfo.avatar || defaultAvatar" />
+            <el-avatar size="small" :src="userAvatar || defaultAvatar" />
           </div>
           <template #dropdown>
             <el-dropdown-menu>
@@ -120,6 +120,22 @@ import { HomeFilled, Reading, School, Document, Flag, Briefcase, ChatDotRound, L
 const userStore = useUserStore()
 const router = useRouter()
 const defaultAvatar = 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=default%20user%20avatar&image_size=square'
+
+// 计算用户头像URL
+const userAvatar = computed(() => {
+  if (!userStore.userInfo || !userStore.userInfo.avatar) {
+    return ''
+  }
+  
+  const avatar = userStore.userInfo.avatar
+  if (avatar.startsWith('http')) {
+    return avatar
+  }
+  
+  // 处理相对路径的头像URL
+  const API_BASE_URL = 'http://localhost:8080'
+  return `${API_BASE_URL}${avatar}`
+})
 
 // 确保store初始化
 onMounted(() => {

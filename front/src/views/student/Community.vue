@@ -52,23 +52,71 @@
             />
             <div class="post-actions">
               <div class="action-buttons">
-                <el-button type="text" size="small">
+                <el-button type="text" size="small" @click="selectImage">
                   <el-icon><Picture /></el-icon> 图片
                 </el-button>
-                <el-button type="text" size="small">
+                <el-button type="text" size="small" @click="selectVideo">
                   <el-icon><VideoCamera /></el-icon> 视频
                 </el-button>
-                <el-button type="text" size="small">
-                  <el-icon><Document /></el-icon> 文档
-                </el-button>
-                <el-button type="text" size="small">
-                  <el-icon><Location /></el-icon> 地点
-                </el-button>
+
+
               </div>
               <el-button type="primary" size="small" @click="publishPost" :loading="publishing">发布</el-button>
             </div>
+            <!-- 附件预览 -->
+            <div v-if="attachments.length > 0" class="attachments-preview">
+              <div v-for="(attachment, index) in attachments" :key="index" class="attachment-item">
+                <div class="attachment-info">
+                  <el-icon v-if="attachment.type === 'image'"><Picture /></el-icon>
+                  <el-icon v-else-if="attachment.type === 'video'"><VideoCamera /></el-icon>
+                  <el-icon v-else><Document /></el-icon>
+                  <span class="attachment-name">{{ attachment.name }}</span>
+                </div>
+                <el-button type="text" size="small" @click="removeAttachment(index)">
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </div>
+            </div>
+            <!-- 地点信息 -->
+            <div v-if="postForm.location" class="location-info">
+              <el-icon><Location /></el-icon>
+              <span>{{ postForm.location }}</span>
+              <el-button type="text" size="small" @click="removeLocation">
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </div>
           </div>
         </div>
+        
+        <!-- 文件上传输入 -->
+        <input
+          ref="fileInput"
+          type="file"
+          multiple
+          style="display: none"
+          @change="handleFileSelect"
+        />
+        
+
+        
+        <!-- 图片放大对话框 -->
+        <el-dialog
+          v-model="enlargeDialogVisible"
+          title="图片预览"
+          width="80%"
+          center
+        >
+          <div class="enlarged-image-container">
+            <img :src="enlargedImageUrl" class="enlarged-image" />
+          </div>
+          <template #footer>
+            <div class="dialog-footer">
+              <el-button type="primary" @click="enlargeDialogVisible = false">关闭</el-button>
+            </div>
+          </template>
+        </el-dialog>
+        
+
         
         <!-- 帖子列表 -->
         <div class="posts-list">
@@ -128,6 +176,22 @@
             
             <div class="post-content">
               <p>{{ post.content }}</p>
+              <!-- 图片展示 -->
+              <div v-if="post.imageUrls" class="post-images">
+                <img
+                  v-for="(imgUrl, index) in post.imageUrls.split(',')"
+                  :key="index"
+                  :src="getFullUrl(imgUrl)"
+                  class="post-image"
+                  @click="previewImage(post.imageUrls.split(','), index)"
+                  @dblclick="enlargeImage(getFullUrl(imgUrl))"
+                />
+              </div>
+              <!-- 视频展示 -->
+              <div v-if="post.videoUrl" class="post-video">
+                <video :src="getFullUrl(post.videoUrl)" controls />
+              </div>
+
             </div>
             <div class="post-footer">
               <div class="post-stats">
@@ -238,7 +302,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ChatDotRound, Star, Collection, Picture, VideoCamera, Document, Location, Share } from '@element-plus/icons-vue'
+import { ChatDotRound, Star, Collection, Picture, VideoCamera, Share, Delete, Refresh } from '@element-plus/icons-vue'
 import { api } from '@/api'
 import { useUserStore } from '@/stores/user'
 
@@ -246,6 +310,8 @@ const publishing = ref(false)
 const expandedPostId = ref<string | null>(null)
 const replyingToCommentId = ref<string | null>(null)
 const userStore = useUserStore()
+const fileInput = ref<HTMLInputElement | null>(null)
+const attachments = ref<any[]>([])
 
 const API_BASE_URL = 'http://localhost:8080'
 
@@ -259,6 +325,32 @@ const getFullAvatarUrl = (avatar: string | undefined) => {
   }
   return `${API_BASE_URL}${avatar}`
 }
+
+// 计算完整的资源URL
+const getFullUrl = (url: string | undefined) => {
+  if (!url) return ''
+  if (url.startsWith('http') || url === '#') {
+    return url
+  }
+  return `${API_BASE_URL}${url}`
+}
+
+// 图片预览
+const previewImage = (images: string[], index: number) => {
+  // 可以使用Element Plus的图片预览功能
+  console.log('Preview image:', images, index)
+}
+
+// 图片放大
+const enlargeDialogVisible = ref(false)
+const enlargedImageUrl = ref('')
+
+const enlargeImage = (imageUrl: string) => {
+  enlargedImageUrl.value = imageUrl
+  enlargeDialogVisible.value = true
+}
+
+
 
 // 发布帖子表单
 const postForm = ref({
@@ -350,12 +442,19 @@ const fetchPosts = async () => {
     if (userStore.userInfo) {
       for (const post of posts.value) {
         try {
+          // 暂时跳过互动检查，避免API调用失败
+          post.liked = false
+          post.collected = false
+          /*
           const liked = await api.community.checkInteraction(post.id.toString(), 'like')
           post.liked = liked
           const collected = await api.community.checkInteraction(post.id.toString(), 'collect')
           post.collected = collected
+          */
         } catch (error) {
           console.error('Failed to check interaction:', error)
+          post.liked = false
+          post.collected = false
         }
       }
     }
@@ -365,15 +464,95 @@ const fetchPosts = async () => {
   }
 }
 
+// 选择图片
+const selectImage = () => {
+  if (fileInput.value) {
+    fileInput.value.accept = 'image/*'
+    fileInput.value.multiple = true
+    fileInput.value.click()
+  }
+}
+
+// 选择视频
+const selectVideo = () => {
+  if (fileInput.value) {
+    fileInput.value.accept = 'video/*'
+    fileInput.value.multiple = false
+    fileInput.value.click()
+  }
+}
+
+
+
+// 处理文件选择
+const handleFileSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const files = target.files
+  if (files) {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      let type = 'image'
+      if (file.type.startsWith('video/')) {
+        type = 'video'
+      }
+      // 只处理图片和视频文件
+      if (type === 'image' || type === 'video') {
+        attachments.value.push({
+          name: file.name,
+          type: type,
+          file: file
+        })
+      }
+    }
+  }
+  // 清空input的值，以便可以重复选择同一个文件
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+// 移除附件
+const removeAttachment = (index: number) => {
+  attachments.value.splice(index, 1)
+}
+
+
+
 // 发布帖子
 const publishPost = async () => {
   if (postForm.value.content) {
     try {
       publishing.value = true
-      // 模拟发布帖子
-      await api.community.createPost('新帖子', postForm.value.content, '')
+      
+      // 收集上传后的附件URL
+      const imageUrls: string[] = []
+      let videoUrl = ''
+      
+      // 处理附件上传
+      if (attachments.value.length > 0) {
+        for (const attachment of attachments.value) {
+          if (attachment.type === 'image') {
+            const result: any = await api.upload.image(attachment.file)
+            if (result.imageUrl) {
+              imageUrls.push(result.imageUrl)
+            }
+          } else if (attachment.type === 'video') {
+            const result: any = await api.upload.video(attachment.file, '', '', '', '')
+            if (result.videoUrl) {
+              videoUrl = result.videoUrl
+            }
+          }
+        }
+      }
+      
+      // 创建帖子，传递附件信息
+      await api.community.createPost('新帖子', postForm.value.content, '', {
+        imageUrls: imageUrls.join(','),
+        videoUrl: videoUrl
+      })
       ElMessage.success('发布成功')
       postForm.value.content = ''
+      attachments.value = []
       // 重新获取帖子数据
       await fetchPosts()
     } catch (error: any) {
@@ -671,6 +850,89 @@ onMounted(() => {
   color: #e6162d;
 }
 
+/* 附件预览 */
+.attachments-preview {
+  margin-top: 10px;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  padding: 10px;
+  background-color: #fafafa;
+}
+
+.attachment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.attachment-item:last-child {
+  border-bottom: none;
+}
+
+.attachment-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.attachment-info .el-icon {
+  font-size: 18px;
+  color: #409eff;
+}
+
+.attachment-name {
+  font-size: 14px;
+  color: #606266;
+}
+
+/* 地点信息 */
+.location-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background-color: #f9fafc;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+}
+
+.location-info .el-icon {
+  font-size: 16px;
+  color: #409eff;
+}
+
+.location-info span {
+  font-size: 14px;
+  color: #606266;
+  flex: 1;
+}
+
+/* 对话框样式 */
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* 图片放大对话框 */
+.enlarged-image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.enlarged-image {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
 /* 帖子列表 */
 .posts-list {
   background-color: #fff;
@@ -743,6 +1005,69 @@ onMounted(() => {
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+
+
+/* 帖子图片展示 */
+.post-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.post-image {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.post-image:hover {
+  transform: scale(1.05);
+}
+
+/* 帖子视频展示 */
+.post-video {
+  margin-top: 10px;
+}
+
+.post-video video {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 4px;
+}
+
+/* 帖子文档展示 */
+.post-documents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.document-link {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  text-decoration: none;
+  color: #409eff;
+  font-size: 13px;
+  transition: background-color 0.3s;
+}
+
+.document-link:hover {
+  background-color: #e4e4e4;
+}
+
+.document-link .el-icon {
+  font-size: 16px;
 }
 
 .post-footer {

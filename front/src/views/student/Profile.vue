@@ -1,348 +1,329 @@
 <template>
   <div class="profile">
-    <!-- 头部区域 -->
-    <div class="profile-header">
-      <div class="header-left">
-        <h1 class="page-title">个人中心</h1>
+    <!-- 欢迎信息 -->
+    <div class="welcome-section">
+      <div class="welcome-message">
+        <h2>你好，学习者 🌟</h2>
+        <p>今天是你坚持学习的第 7 天，加油！</p>
       </div>
-      <div class="header-right">
-        <div class="user-greeting">
-          Hi, {{ userInfo.name || '用户' }}！
-        </div>
-        <div class="header-actions">
-          <el-button type="text" class="setting-btn">
-            <el-icon><Setting /></el-icon>
+      <div class="header-actions">
+        <el-badge value="5" type="danger" class="notification-badge">
+          <el-button type="text">
+            <el-icon><Bell /></el-icon>
           </el-button>
-          <el-button type="text" @click="handleLogout">退出登录</el-button>
+        </el-badge>
+      </div>
+    </div>
+    
+    <!-- 顶部统计卡片 -->
+    <div class="stats-cards">
+      <div class="stat-card blue">
+        <div class="stat-icon">
+          <el-icon><Check /></el-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-title">今日任务进度</div>
+          <div class="stat-value">3 / 5</div>
+          <div class="stat-progress">
+            <el-progress :percentage="60" :format="() => ''" />
+          </div>
+        </div>
+      </div>
+      <div class="stat-card white">
+        <div class="stat-icon">
+          <el-icon><Clock /></el-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-title">今日学习时长</div>
+          <div class="stat-value">4.5 h</div>
+          <div class="stat-subtitle">本周</div>
+        </div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">
+          <el-icon><TrendCharts /></el-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-title">连续学习天数</div>
+          <div class="stat-value">7 天</div>
+          <div class="stat-subtitle">持续进步中 🔥</div>
+        </div>
+      </div>
+      <div class="stat-card yellow">
+        <div class="stat-icon">
+          <el-icon><Timer /></el-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-title">累计学习时长</div>
+          <div class="stat-value">120 h</div>
+          <div class="stat-subtitle">总计</div>
+        </div>
+      </div>
+      <div class="quick-entry-card">
+        <div class="quick-entry">
+          <h3 class="quick-entry-title">快捷学习入口</h3>
+          <div class="quick-entry-item">
+            <div class="quick-entry-icon word-icon">
+              <el-icon><Notebook /></el-icon>
+            </div>
+            <div class="quick-entry-text">
+              <div class="quick-entry-title">单词本</div>
+              <div class="quick-entry-desc">掌握率 75%</div>
+            </div>
+            <el-button type="text" class="quick-entry-btn">去学习</el-button>
+          </div>
+          <div class="quick-entry-item">
+            <div class="quick-entry-icon error-icon">
+              <el-icon><Warning /></el-icon>
+            </div>
+            <div class="quick-entry-text">
+              <div class="quick-entry-title">错题本</div>
+              <div class="quick-entry-desc">未复习 12 题</div>
+            </div>
+            <el-button type="text" class="quick-entry-btn">去复习</el-button>
+          </div>
         </div>
       </div>
     </div>
     
-    <!-- 中部内容区：个人信息与设置 -->
-    <div class="middle-content">
-      <el-card class="info-card">
-        <template #header>
-          <div class="card-header">
-            <span>个人信息</span>
-            <el-button type="primary" size="small" @click="editMode = !editMode">
-              {{ editMode ? '取消' : '编辑' }}
-            </el-button>
+    <!-- 主要内容区 -->
+    <div class="main-content-grid">
+      <!-- 左侧：近期模考成绩 -->
+      <div class="card-item">
+        <el-card class="content-card">
+          <template #header>
+            <div class="card-header">
+              <span>近期模考成绩</span>
+              <el-button type="text" size="small" class="view-more-btn">查看详细报告</el-button>
+            </div>
+          </template>
+          <div class="chart-container">
+            <div class="chart" ref="studyChartRef" style="height: 250px;"></div>
           </div>
-        </template>
-        <div class="profile-info">
-          <div class="avatar-section">
-            <img :src="fullAvatarUrl" :alt="userInfo.name" class="avatar" />
-            <input 
-              type="file" 
-              ref="fileInput" 
-              accept="image/*" 
-              style="display: none"
-              @change="handleFileChange"
-            />
-            <el-button size="small" @click="changeAvatar">更换头像</el-button>
-          </div>
-          <div class="info-form">
-            <el-form :model="userInfo" label-width="100px">
-              <el-form-item label="姓名">
-                <el-input v-model="userInfo.name" :disabled="!editMode" />
-              </el-form-item>
-              <el-form-item label="邮箱">
-                <el-input v-model="userInfo.email" :disabled="!editMode" />
-              </el-form-item>
-              <el-form-item label="性别">
-                <el-select v-model="userInfo.gender" :disabled="!editMode" placeholder="请选择性别">
-                  <el-option label="男" value="male" />
-                  <el-option label="女" value="female" />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="年龄">
-                <el-input v-model="userInfo.age" type="number" :disabled="!editMode" />
-              </el-form-item>
-              <el-form-item label="考试类型">
-                <el-radio-group v-model="userInfo.examType" :disabled="!editMode">
-                  <el-radio label="ielts">雅思</el-radio>
-                  <el-radio label="toefl">托福</el-radio>
-                  <el-radio label="cet4">四级</el-radio>
-                  <el-radio label="cet6">六级</el-radio>
-                  <el-radio label="kaoyan">考研英语</el-radio>
-                  <el-radio label="teenage">青少年英语</el-radio>
-                </el-radio-group>
-              </el-form-item>
-              <el-form-item label="目标分数">
-                <el-input v-model="userInfo.targetScore" :disabled="!editMode" />
-              </el-form-item>
-              <el-form-item label="目标日期">
-                <el-date-picker
-                  v-model="userInfo.targetDate"
-                  type="date"
-                  :disabled="!editMode"
-                  placeholder="选择日期"
-                  style="width: 100%"
-                />
-              </el-form-item>
-              <el-form-item v-if="editMode">
-                <el-button type="primary" @click="saveInfo">保存</el-button>
-              </el-form-item>
-            </el-form>
-          </div>
-        </div>
-      </el-card>
-    </div>
-    
-    <!-- 主体内容区 -->
-    <div class="main-content">
-      <!-- 左侧列：数据看板 -->
-      <div class="left-column">
-        <!-- 学习概览卡片 -->
-        <el-card class="dashboard-card">
+        </el-card>
+      </div>
+      
+      <!-- 中间：学习概览 -->
+      <div class="card-item">
+        <el-card class="content-card">
           <template #header>
             <div class="card-header">
               <span>学习概览</span>
             </div>
           </template>
           <div class="learning-overview">
-            <div class="overview-item">
-              <div class="overview-label">今日任务进度</div>
-              <div class="progress-container">
-                <el-progress :percentage="60" :format="() => '3/5'" />
-              </div>
-            </div>
-            <div class="overview-item">
-              <div class="overview-label">连续学习天数</div>
-              <div class="streak-count">7天</div>
-              <div class="calendar-preview">
-                <div class="calendar-days">
-                  <div v-for="day in 30" :key="day" class="calendar-day" :class="{ 'active': day > 23 }">
-                    {{ day }}
-                  </div>
+            <!-- 本月学习日历 -->
+            <div class="calendar-section">
+              <div class="calendar-header">
+                <span>本月学习日历</span>
+                <div class="calendar-nav">
+                  <el-button type="text" size="small"><el-icon><ArrowLeft /></el-icon></el-button>
+                  <span>2024年5月</span>
+                  <el-button type="text" size="small"><el-icon><ArrowRight /></el-icon></el-button>
                 </div>
               </div>
-            </div>
-            <div class="overview-item">
-              <div class="overview-label">总学习时长</div>
-              <div class="time-stats">
-                <div class="time-item">
-                  <div class="time-value">4.5h</div>
-                  <div class="time-label">本周</div>
-                </div>
-                <div class="time-item">
-                  <div class="time-value">18h</div>
-                  <div class="time-label">本月</div>
-                </div>
-                <div class="time-item">
-                  <div class="time-value">120h</div>
-                  <div class="time-label">累计</div>
-                </div>
+              <div class="calendar-weekdays">
+                <div class="weekday">一</div>
+                <div class="weekday">二</div>
+                <div class="weekday">三</div>
+                <div class="weekday">四</div>
+                <div class="weekday">五</div>
+                <div class="weekday">六</div>
+                <div class="weekday">日</div>
+              </div>
+              <div class="calendar-days">
+                <div class="calendar-day">1</div>
+                <div class="calendar-day">2</div>
+                <div class="calendar-day">3</div>
+                <div class="calendar-day">4</div>
+                <div class="calendar-day">5</div>
+                <div class="calendar-day">6</div>
+                <div class="calendar-day">7</div>
+                <div class="calendar-day">8</div>
+                <div class="calendar-day">9</div>
+                <div class="calendar-day">10</div>
+                <div class="calendar-day">11</div>
+                <div class="calendar-day">12</div>
+                <div class="calendar-day">13</div>
+                <div class="calendar-day">14</div>
+                <div class="calendar-day">15</div>
+                <div class="calendar-day">16</div>
+                <div class="calendar-day">17</div>
+                <div class="calendar-day">18</div>
+                <div class="calendar-day">19</div>
+                <div class="calendar-day">20</div>
+                <div class="calendar-day">21</div>
+                <div class="calendar-day">22</div>
+                <div class="calendar-day">23</div>
+                <div class="calendar-day active">24</div>
+                <div class="calendar-day active">25</div>
+                <div class="calendar-day active">26</div>
+                <div class="calendar-day active">27</div>
+                <div class="calendar-day active">28</div>
+                <div class="calendar-day active">29</div>
+                <div class="calendar-day active">30</div>
+                <div class="calendar-day">31</div>
               </div>
             </div>
-            <div class="overview-item">
-              <div class="overview-label">当前等级</div>
-              <div class="level-info">
-                <div class="level-badge">雅思 6.0 分水平</div>
-                <div class="level-desc">Level B2</div>
-              </div>
+            
+            <!-- 总学习时长 -->
+            <div class="total-time">
+              <div class="time-label">总学习时长（本月）</div>
+              <div class="time-value">18 h</div>
             </div>
-          </div>
-        </el-card>
-        
-        <!-- 能力雷达图 -->
-        <el-card class="dashboard-card">
-          <div class="radar-chart" ref="radarChartRef" style="height: 300px;"></div>
-        </el-card>
-        
-        <!-- 近期模考成绩 -->
-        <el-card class="dashboard-card">
-          <div class="exam-chart" ref="examChartRef" style="height: 250px;"></div>
-          <div style="text-align: center; margin-top: 20px;">
-            <el-button type="primary" size="small" class="view-report-btn">查看详细报告</el-button>
           </div>
         </el-card>
       </div>
       
-      <!-- 右侧列：核心功能入口 -->
-      <div class="right-column">
-        <!-- 快捷学习入口 -->
-        <el-card class="action-card">
+      <!-- 右侧：能力雷达图 -->
+      <div class="card-item">
+        <el-card class="content-card">
           <template #header>
             <div class="card-header">
-              <span>快捷学习入口</span>
+              <span>能力雷达图</span>
             </div>
           </template>
-          <div class="quick-actions">
-            <el-button type="primary" class="start-learning-btn">
-              开始今日学习
-            </el-button>
-            <div class="action-items">
-              <div class="action-item">
-                <div class="action-icon word-icon">
-                  <el-icon><Notebook /></el-icon>
-                </div>
-                <div class="action-content">
-                  <div class="action-title">单词本</div>
-                  <div class="action-desc">掌握率 75%</div>
-                </div>
-                <el-button type="text" class="action-btn">去学习</el-button>
+          <div class="radar-chart">
+            <div class="radar" ref="radarChartRef" style="height: 200px;"></div>
+            <div class="radar-legend">
+              <div class="legend-item">
+                <div class="legend-color current"></div>
+                <span>当前水平</span>
               </div>
-              <div class="action-item">
-                <div class="action-icon error-icon">
-                  <el-icon><Warning /></el-icon>
-                </div>
-                <div class="action-content">
-                  <div class="action-title">错题本</div>
-                  <div class="action-desc">未复习 12 题</div>
-                </div>
-                <el-button type="text" class="action-btn">去复习</el-button>
+              <div class="legend-item">
+                <div class="legend-color target"></div>
+                <span>目标水平</span>
               </div>
             </div>
           </div>
         </el-card>
-        
-        <!-- 我的资产 -->
-        <el-card class="action-card">
+      </div>
+      
+      <!-- 左侧：学习记录 -->
+      <div class="card-item">
+        <el-card class="content-card">
           <template #header>
             <div class="card-header">
-              <span>我的资产</span>
+              <span>学习记录</span>
+              <el-button type="text" size="small" class="view-more-btn">全部记录</el-button>
             </div>
           </template>
-          <div class="assets">
-            <div class="asset-item">
-              <div class="asset-icon course-icon">
-                <el-icon><VideoCamera /></el-icon>
+          <div class="learning-records">
+            <div class="record-item" v-for="(record, index) in studyRecords" :key="index">
+              <div class="record-icon">
+                <el-icon v-if="index === 0"><VideoPlay /></el-icon>
+                <el-icon v-else-if="index === 1"><Notebook /></el-icon>
+                <el-icon v-else><Trophy /></el-icon>
               </div>
-              <div class="asset-content">
-                <div class="asset-title">我的课程</div>
-                <div class="asset-desc">已购买 3 门课程</div>
+              <div class="record-content">
+                <div class="record-title">{{ record.title }}</div>
+                <div class="record-desc">{{ record.description }}</div>
               </div>
-              <el-button type="text" class="asset-btn">查看</el-button>
+              <div class="record-time">{{ record.time }}</div>
             </div>
-            <div class="asset-item">
-              <div class="asset-icon collect-icon">
+          </div>
+        </el-card>
+      </div>
+      
+      <!-- 中间：消息中心 -->
+      <div class="card-item">
+        <el-card class="content-card">
+          <template #header>
+            <div class="card-header">
+              <span>消息中心</span>
+              <el-button type="text" size="small" class="view-more-btn">全部消息</el-button>
+            </div>
+          </template>
+          <div class="messages">
+            <div class="message-item unread" v-for="(message, index) in messages" :key="index" :class="{ 'unread': message.unread }">
+              <div class="message-icon">
+                <el-badge v-if="message.unread" type="danger" :value="''" class="message-badge" />
+                <el-icon v-if="index === 0"><ChatLineSquare /></el-icon>
+                <el-icon v-else-if="index === 1"><Document /></el-icon>
+                <el-icon v-else><Star /></el-icon>
+              </div>
+              <div class="message-content">
+                <div class="message-title">{{ message.title }}</div>
+                <div class="message-desc">{{ message.description }}</div>
+              </div>
+              <div class="message-time">{{ message.time }}</div>
+            </div>
+          </div>
+        </el-card>
+      </div>
+      
+      <!-- 右侧：我的资源 -->
+      <div class="card-item">
+        <el-card class="content-card">
+          <template #header>
+            <div class="card-header">
+              <span>我的资源</span>
+            </div>
+          </template>
+          <div class="resources">
+            <div class="resource-item">
+              <div class="resource-icon course-icon">
+                <el-icon><Document /></el-icon>
+              </div>
+              <div class="resource-content">
+                <div class="resource-title">我的课程</div>
+                <div class="resource-desc">已购买 3 门课程</div>
+              </div>
+              <el-button type="text" class="resource-btn">查看</el-button>
+            </div>
+            <div class="resource-item">
+              <div class="resource-icon collect-icon">
                 <el-icon><Star /></el-icon>
               </div>
-              <div class="asset-content">
-                <div class="asset-title">我的收藏</div>
-                <div class="asset-desc">收藏 15 项内容</div>
+              <div class="resource-content">
+                <div class="resource-title">新的收藏</div>
+                <div class="resource-desc">收藏 15 项内容</div>
               </div>
-              <el-button type="text" class="asset-btn">查看</el-button>
+              <el-button type="text" class="resource-btn">查看</el-button>
             </div>
-            <div class="asset-item">
-              <div class="asset-icon note-icon">
-                <el-icon><Edit /></el-icon>
+            <div class="resource-item">
+              <div class="resource-icon note-icon">
+                <el-icon><Notebook /></el-icon>
               </div>
-              <div class="asset-content">
-                <div class="asset-title">我的笔记</div>
-                <div class="asset-desc">记录 20 条笔记</div>
+              <div class="resource-content">
+                <div class="resource-title">我的笔记</div>
+                <div class="resource-desc">记录 20 条笔记</div>
               </div>
-              <el-button type="text" class="asset-btn">查看</el-button>
-            </div>
-          </div>
-        </el-card>
-        
-        <!-- 安全设置 -->
-        <el-card class="action-card">
-          <template #header>
-            <div class="card-header">
-              <span>安全设置</span>
-            </div>
-          </template>
-          <div class="security-settings">
-            <div class="security-item">
-              <div class="security-label">修改密码</div>
-              <el-button type="text">修改</el-button>
-            </div>
-            <div class="security-item">
-              <div class="security-label">绑定手机</div>
-              <el-button type="text">绑定</el-button>
-            </div>
-            <div class="security-item">
-              <div class="security-label">第三方登录</div>
-              <div class="third-party">
-                <el-button type="text" class="third-party-btn">
-                  <el-icon><ChatLineSquare /></el-icon> 微信
-                </el-button>
-                <el-button type="text" class="third-party-btn">
-                  <el-icon><Monitor /></el-icon> QQ
-                </el-button>
-              </div>
+              <el-button type="text" class="resource-btn">查看</el-button>
             </div>
           </div>
         </el-card>
       </div>
     </div>
     
-    <!-- 底部内容区：学习记录与系统消息 -->
-    <div class="bottom-content">
-      <div class="bottom-left">
-        <!-- 学习记录 -->
-        <el-card class="record-card">
-          <template #header>
-            <div class="card-header">
-              <span>学习记录</span>
-              <el-button type="text" size="small">查看全部</el-button>
-            </div>
-          </template>
-          <div class="learning-records">
-            <div class="record-item">
-              <div class="record-time">昨天</div>
-              <div class="record-content">
-                <div class="record-title">学习了雅思听力真题Section 3</div>
-                <div class="record-desc">学习了45分钟</div>
-              </div>
-            </div>
-            <div class="record-item">
-              <div class="record-time">2天前</div>
-              <div class="record-content">
-                <div class="record-title">完成了单词复习任务</div>
-                <div class="record-desc">复习了50个单词</div>
-              </div>
-            </div>
-            <div class="record-item">
-              <div class="record-time">3天前</div>
-              <div class="record-content">
-                <div class="record-title">参加了模拟考试</div>
-                <div class="record-desc">得分：6.0</div>
-              </div>
-            </div>
+    <!-- 安全设置对话框 -->
+    <el-dialog
+      v-model="showSecuritySettings"
+      title="安全设置"
+      width="500px"
+    >
+      <div class="security-settings">
+        <div class="security-item">
+          <div class="security-label">修改密码</div>
+          <el-button type="primary" size="small">修改</el-button>
+        </div>
+        <div class="security-item">
+          <div class="security-label">绑定手机</div>
+          <el-button type="primary" size="small">绑定</el-button>
+        </div>
+        <div class="security-item">
+          <div class="security-label">第三方登录</div>
+          <div class="third-party-bindings">
+            <el-button type="text" class="third-party-btn">
+              <el-icon><ChatLineSquare /></el-icon> 微信
+            </el-button>
+            <el-button type="text" class="third-party-btn">
+              <el-icon><Monitor /></el-icon> QQ
+            </el-button>
           </div>
-        </el-card>
+        </div>
       </div>
-      <div class="bottom-right">
-        <!-- 消息中心 -->
-        <el-card class="message-card">
-          <template #header>
-            <div class="card-header">
-              <span>消息中心</span>
-              <el-badge value="3" type="danger" />
-            </div>
-          </template>
-          <div class="messages">
-            <div class="message-item unread">
-              <div class="message-content">
-                <div class="message-title">口语作业已批改</div>
-                <div class="message-desc">你的口语作业已批改，请查收</div>
-              </div>
-              <div class="message-time">1小时前</div>
-            </div>
-            <div class="message-item">
-              <div class="message-content">
-                <div class="message-title">新课程上线</div>
-                <div class="message-desc">雅思写作提升课程已上线</div>
-              </div>
-              <div class="message-time">昨天</div>
-            </div>
-            <div class="message-item">
-              <div class="message-content">
-                <div class="message-title">学习提醒</div>
-                <div class="message-desc">距离考试还有30天，加油！</div>
-              </div>
-              <div class="message-time">2天前</div>
-            </div>
-          </div>
-        </el-card>
-        
-
-      </div>
-    </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -361,7 +342,17 @@ import {
   Star, 
   Edit, 
   ChatLineSquare, 
-  Monitor 
+  Monitor, 
+  Check, 
+  Clock, 
+  TrendCharts, 
+  Timer, 
+  VideoPlay, 
+  Trophy, 
+  Document,
+  Bell,
+  ArrowLeft,
+  ArrowRight
 } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
@@ -369,6 +360,7 @@ const router = useRouter()
 const editMode = ref(false)
 const fileInput = ref<HTMLInputElement>()
 const uploading = ref(false)
+const showSecuritySettings = ref(false)
 
 const API_BASE_URL = 'http://localhost:8080'
 
@@ -379,8 +371,9 @@ const userInfo = ref({
   age: 0,
   goal: '',
   avatar: '',
+  level: 'B2',
   examType: 'ielts',
-  targetScore: '7.0',
+  targetScore: '6.5',
   targetDate: ''
 })
 
@@ -392,6 +385,49 @@ const fullAvatarUrl = computed(() => {
     return userInfo.value.avatar
   }
   return `${API_BASE_URL}${userInfo.value.avatar}`
+})
+
+// 最近学习课程
+const recentCourses = ref([
+  { title: '雅思听力真题Section 3', progress: 75 },
+  { title: '雅思写作提升课程', progress: 45 },
+  { title: '单词复习任务', progress: 100 }
+])
+
+// 学习记录
+const studyRecords = ref([
+  { title: '学习了雅思听力真题Section 3', description: '学习了45分钟', time: '昨天' },
+  { title: '完成了单词复习任务', description: '复习了50个单词', time: '2天前' },
+  { title: '参加了模拟考试', description: '得分：6.0', time: '3天前' }
+])
+
+// 徽章
+const badges = ref([
+  { icon: '🏆', name: '连续打卡' },
+  { icon: '⭐', name: '模考达人' },
+  { icon: '🔥', name: '学习之星' }
+])
+
+// 我的资源
+const resources = ref([
+  { icon: '📝', title: '我的笔记', count: '20条' },
+  { icon: '❌', title: '错题本', count: '12题' },
+  { icon: '⭐', title: '收藏夹', count: '15项' },
+  { icon: '📥', title: '下载资料', count: '8份' }
+])
+
+// 消息中心
+const messages = ref([
+  { title: '口语作业已批改', description: '你的口语作业已批改，请查收', time: '1小时前', unread: true },
+  { title: '新课程上线', description: '雅思写作提升课程已上线', time: '昨天', unread: false },
+  { title: '学习提醒', description: '距离考试还有30天，加油！', time: '2天前', unread: false }
+])
+
+// 学习数据图表数据
+const studyChartData = ref({
+  months: ['1月', '2月', '3月', '4月', '5月', '6月'],
+  hours: [4.5, 5.2, 6.8, 7.5, 8.2, 7.8],
+  accuracy: [75, 78, 82, 85, 88, 90]
 })
 
 // 能力雷达图数据
@@ -413,9 +449,6 @@ const series = [
   }
 ]
 
-// 模考成绩数据
-const examData = [5.5, 5.5, 5.8, 6.0, 6.0]
-
 onMounted(() => {
   if (userStore.userInfo) {
     userInfo.value = {
@@ -425,11 +458,18 @@ onMounted(() => {
       age: 0,
       goal: '',
       avatar: userStore.userInfo.avatar || '',
+      level: 'B2',
       examType: 'ielts',
-      targetScore: '7.0',
+      targetScore: '6.5',
       targetDate: ''
     }
   }
+  
+  nextTick(() => {
+    initStudyChart()
+    initRadarChart()
+    window.addEventListener('resize', handleResize)
+  })
 })
 
 const saveInfo = () => {
@@ -466,12 +506,20 @@ const handleFileChange = async (event: Event) => {
     const result = await api.upload.avatar(file)
     
     if (result.success) {
+      // 直接更新 userInfo.value.avatar
       userInfo.value.avatar = result.avatarUrl
       
+      // 同时更新 userStore
       if (userStore.userInfo) {
         userStore.userInfo.avatar = result.avatarUrl
         localStorage.setItem('userInfo', JSON.stringify(userStore.userInfo))
       }
+      
+      // 强制重新计算 fullAvatarUrl
+      nextTick(() => {
+        // 触发计算属性重新计算
+        console.log('头像已更新:', userInfo.value.avatar)
+      })
       
       ElMessage.success('头像上传成功')
     } else {
@@ -490,9 +538,51 @@ const handleFileChange = async (event: Event) => {
 
 // 图表引用
 const radarChartRef = ref<HTMLElement>()
-const examChartRef = ref<HTMLElement>()
+const studyChartRef = ref<HTMLElement>()
 let radarChart: echarts.ECharts | null = null
-let examChart: echarts.ECharts | null = null
+let studyChart: echarts.ECharts | null = null
+
+// 初始化近期模考成绩图表
+const initStudyChart = () => {
+  if (!studyChartRef.value) return
+  
+  studyChart = echarts.init(studyChartRef.value)
+  
+  const option = {
+    tooltip: {
+      trigger: 'axis'
+    },
+    xAxis: {
+      type: 'category',
+      data: ['1月', '2月', '3月', '4月', '5月']
+    },
+    yAxis: {
+      type: 'value',
+      min: 5.0,
+      max: 7.0,
+      interval: 0.5,
+      axisLabel: {
+        formatter: '{value}'
+      }
+    },
+    series: [
+      {
+        name: '雅思总分',
+        type: 'line',
+        data: [5.5, 5.5, 5.8, 6.0, 6.0],
+        smooth: true,
+        itemStyle: {
+          color: '#409EFF'
+        },
+        areaStyle: {
+          color: 'rgba(64, 158, 255, 0.2)'
+        }
+      }
+    ]
+  }
+  
+  studyChart.setOption(option)
+}
 
 // 初始化能力雷达图
 const initRadarChart = () => {
@@ -501,24 +591,11 @@ const initRadarChart = () => {
   radarChart = echarts.init(radarChartRef.value)
   
   const option = {
-    title: {
-      text: '能力雷达图',
-      left: 'center'
-    },
     tooltip: {
       trigger: 'item'
     },
-    legend: {
-      data: ['当前分数', '目标分数'],
-      bottom: 10
-    },
     radar: {
-      indicator: [
-        { name: '听力', max: 9 },
-        { name: '口语', max: 9 },
-        { name: '阅读', max: 9 },
-        { name: '写作', max: 9 }
-      ]
+      indicator: indicator
     },
     series: [
       {
@@ -526,7 +603,7 @@ const initRadarChart = () => {
         type: 'radar',
         data: [
           {
-            value: [6.0, 5.5, 6.5, 6.0],
+            value: series[0].data,
             name: '当前分数',
             itemStyle: {
               color: '#409EFF'
@@ -536,7 +613,7 @@ const initRadarChart = () => {
             }
           },
           {
-            value: [7.0, 7.0, 7.0, 7.0],
+            value: series[1].data,
             name: '目标分数',
             itemStyle: {
               color: '#67C23A'
@@ -553,80 +630,16 @@ const initRadarChart = () => {
   radarChart.setOption(option)
 }
 
-// 初始化近期模考成绩图表
-const initExamChart = () => {
-  if (!examChartRef.value) return
-  
-  examChart = echarts.init(examChartRef.value)
-  
-  const option = {
-    title: {
-      text: '近期模考成绩',
-      left: 'center'
-    },
-    tooltip: {
-      trigger: 'axis'
-    },
-    xAxis: {
-      type: 'category',
-      data: ['1月', '2月', '3月', '4月', '5月']
-    },
-    yAxis: {
-      type: 'value',
-      min: 5.0,
-      max: 7.0,
-      interval: 0.5
-    },
-    series: [
-      {
-        data: [5.5, 5.5, 5.8, 6.0, 6.0],
-        type: 'line',
-        smooth: true,
-        itemStyle: {
-          color: '#409EFF'
-        },
-        areaStyle: {
-          color: 'rgba(64, 158, 255, 0.2)'
-        }
-      }
-    ]
-  }
-  
-  examChart.setOption(option)
-}
-
 // 监听窗口大小变化
 const handleResize = () => {
   radarChart?.resize()
-  examChart?.resize()
+  studyChart?.resize()
 }
-
-onMounted(() => {
-  if (userStore.userInfo) {
-    userInfo.value = {
-      name: userStore.userInfo.name || '',
-      email: userStore.userInfo.email || '',
-      gender: '',
-      age: 0,
-      goal: '',
-      avatar: userStore.userInfo.avatar || '',
-      examType: 'ielts',
-      targetScore: '7.0',
-      targetDate: ''
-    }
-  }
-  
-  nextTick(() => {
-    initRadarChart()
-    initExamChart()
-    window.addEventListener('resize', handleResize)
-  })
-})
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
   radarChart?.dispose()
-  examChart?.dispose()
+  studyChart?.dispose()
 })
 
 // 退出登录
@@ -641,50 +654,25 @@ const handleLogout = () => {
   padding: 20px 0;
 }
 
-/* 头部区域 */
-.profile-header {
+/* 欢迎信息 */
+.welcome-section {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #e6e6e6;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.system-logo {
-  display: flex;
-  align-items: center;
-}
-
-.logo-text {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  letter-spacing: 1px;
-}
-
-.page-title {
+.welcome-message h2 {
   font-size: 24px;
   font-weight: 600;
   color: #333;
-  margin: 0;
+  margin-bottom: 10px;
 }
 
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.user-greeting {
+.welcome-message p {
   font-size: 16px;
   color: #666;
+  margin: 0;
 }
 
 .header-actions {
@@ -693,29 +681,214 @@ const handleLogout = () => {
   gap: 10px;
 }
 
-.setting-btn {
-  color: #666;
+.notification-badge {
+  font-size: 12px;
+  line-height: 1;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 6px;
+  border-radius: 8px;
+  text-align: center;
+  background-color: #ff4d4f;
+  color: #fff;
+  box-shadow: 0 0 0 1px #fff inset;
 }
 
-/* 主体内容区 */
-.main-content {
+/* 顶部统计卡片 */
+.stats-cards {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 30px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
   margin-bottom: 30px;
+  align-items: stretch;
 }
 
-/* 左侧列：数据看板 */
-.left-column {
+.stat-card {
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  align-items: flex-start;
+  gap: 10px;
+  transition: all 0.3s ease;
+  background-color: white;
+  min-height: 120px;
+  justify-content: space-between;
 }
 
-.dashboard-card {
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+.stat-card.blue {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.stat-card.white {
+  background-color: #f8f9fa;
+  color: #333333;
+  border: 1px solid #e6e6e6;
+}
+
+.stat-card.green {
+  background-color: #f6ffed;
+  color: #52c41a;
+}
+
+.stat-card.yellow {
+  background-color: #fffbe6;
+  color: #faad14;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.quick-entry-card {
+  grid-column: span 1;
+}
+
+.quick-entry {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 16px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.quick-entry-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.quick-entry-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.quick-entry-item:hover {
+  background-color: #f0f0f0;
+}
+
+.quick-entry-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.quick-entry-text {
+  flex: 1;
+}
+
+.quick-entry-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 4px 0;
+}
+
+.quick-entry-desc {
+  font-size: 12px;
+  color: #666;
+  margin: 0;
+}
+
+.quick-entry-btn {
+  color: #409EFF;
+  font-size: 12px;
+  padding: 0 8px;
+}
+
+.stat-icon {
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.stat-subtitle {
+  font-size: 12px;
+  color: #999;
+}
+
+.stat-progress {
+  margin-top: 8px;
+}
+
+/* 主要内容区 */
+.main-content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 20px;
+  margin-bottom: 30px;
+  align-items: stretch;
+}
+
+.card-item {
+  display: flex;
+  align-items: stretch;
+}
+
+.card-item .content-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.radar-chart {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.radar {
+  flex: 1;
+  min-height: 200px;
+}
+
+.content-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   border-radius: 8px;
   overflow: hidden;
+  border: 1px solid #e6e6e6;
+  background-color: white;
+  min-height: 300px;
 }
 
 .card-header {
@@ -732,180 +905,253 @@ const handleLogout = () => {
   color: #333;
 }
 
-/* 学习概览 */
-.learning-overview {
-  padding: 20px;
+.view-more-btn {
+  font-size: 12px;
+  color: #409EFF;
+}
+
+/* 左侧内容 */
+.left-content {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.overview-item {
+/* 图表容器 */
+.chart-container {
+  padding: 20px;
+}
+
+.chart {
+  width: 100%;
+  height: 100%;
+}
+
+/* 学习记录 */
+.learning-records {
+  padding: 20px;
   display: flex;
   flex-direction: column;
+  gap: 15px;
+}
+
+.record-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.record-item:hover {
+  background-color: #f0f0f0;
+}
+
+.record-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e6f7ff;
+  color: #409EFF;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.record-content {
+  flex: 1;
+}
+
+.record-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.record-desc {
+  font-size: 12px;
+  color: #666;
+}
+
+.record-time {
+  font-size: 12px;
+  color: #999;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 中间内容 */
+.middle-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 学习概览 */
+.learning-overview {
+  padding: 20px;
+}
+
+.calendar-section {
+  margin-bottom: 20px;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.calendar-header span {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
   gap: 10px;
 }
 
-.overview-label {
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  margin-bottom: 10px;
 }
 
-.progress-container {
-  width: 100%;
-}
-
-.streak-count {
-  font-size: 24px;
-  font-weight: 600;
-  color: #409EFF;
-}
-
-.calendar-preview {
-  margin-top: 10px;
+.weekday {
+  text-align: center;
+  font-size: 12px;
+  color: #999;
+  padding: 5px;
 }
 
 .calendar-days {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
   gap: 5px;
 }
 
 .calendar-day {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
   color: #999;
   border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .calendar-day.active {
-  background-color: #409EFF;
+  background-color: #1890ff;
   color: white;
 }
 
-.time-stats {
-  display: flex;
-  gap: 20px;
+.total-time {
+  text-align: center;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
 }
 
-.time-item {
-  flex: 1;
-  text-align: center;
+.time-label {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 10px;
 }
 
 .time-value {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 600;
   color: #333;
 }
 
-.time-label {
-  font-size: 12px;
-  color: #999;
-  margin-top: 5px;
-}
-
-.level-info {
+/* 消息中心 */
+.messages {
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 15px;
 }
 
-.level-badge {
-  background-color: #f0f9ff;
-  color: #409EFF;
-  padding: 8px 16px;
-  border-radius: 16px;
-  font-size: 14px;
-  font-weight: 500;
-  width: fit-content;
-}
-
-.level-desc {
-  font-size: 14px;
-  color: #666;
-}
-
-/* 能力雷达图 */
-.radar-chart {
-  padding: 20px;
-  position: relative;
-}
-
-.radar-legend {
+.message-item {
   display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.message-item:hover {
+  background-color: #f0f0f0;
+}
+
+.message-item.unread {
+  background-color: #e6f7ff;
+  border-left: 4px solid #409EFF;
+}
+
+.message-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  align-items: center;
-  gap: 20px;
-  margin-top: 20px;
+  flex-shrink: 0;
 }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 14px;
-  color: #666;
-}
-
-.legend-color {
-  width: 12px;
-  height: 12px;
+.message-badge {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
 }
 
-.score-gap {
+.message-content {
+  flex: 1;
+}
+
+.message-title {
   font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.message-desc {
+  font-size: 12px;
   color: #666;
-  font-weight: 500;
 }
 
-/* 近期模考成绩 */
-.exam-chart {
-  padding: 20px;
+.message-time {
+  font-size: 12px;
+  color: #999;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 右侧内容 */
+.right-content {
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-.view-report-btn {
-  align-self: center;
-}
-
-/* 右侧列：核心功能入口 */
-.right-column {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.action-card {
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  overflow: hidden;
 }
 
 /* 快捷学习入口 */
 .quick-actions {
   padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.start-learning-btn {
-  width: 100%;
-  padding: 15px;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.action-items {
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -933,6 +1179,7 @@ const handleLogout = () => {
   align-items: center;
   justify-content: center;
   font-size: 20px;
+  flex-shrink: 0;
 }
 
 .word-icon {
@@ -953,27 +1200,71 @@ const handleLogout = () => {
   font-size: 14px;
   font-weight: 600;
   color: #333;
+  margin-bottom: 5px;
 }
 
 .action-desc {
   font-size: 12px;
   color: #666;
-  margin-top: 5px;
 }
 
 .action-btn {
   color: #409EFF;
+  font-size: 12px;
 }
 
-/* 我的资产 */
-.assets {
+/* 能力雷达图 */
+.radar-chart {
+  padding: 10px;
+  position: relative;
+}
+
+.radar {
+  width: 100%;
+  height: 100%;
+}
+
+.radar-legend {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #e6e6e6;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #666;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.legend-color.current {
+  background-color: #1890ff;
+}
+
+.legend-color.target {
+  background-color: #52c41a;
+}
+
+/* 我的资源 */
+.resources {
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
-.asset-item {
+.resource-item {
   display: flex;
   align-items: center;
   gap: 15px;
@@ -983,11 +1274,11 @@ const handleLogout = () => {
   transition: all 0.3s ease;
 }
 
-.asset-item:hover {
+.resource-item:hover {
   background-color: #f0f0f0;
 }
 
-.asset-icon {
+.resource-icon {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -995,6 +1286,7 @@ const handleLogout = () => {
   align-items: center;
   justify-content: center;
   font-size: 20px;
+  flex-shrink: 0;
 }
 
 .course-icon {
@@ -1012,180 +1304,25 @@ const handleLogout = () => {
   color: #722ed1;
 }
 
-.asset-content {
+.resource-content {
   flex: 1;
 }
 
-.asset-title {
+.resource-title {
   font-size: 14px;
   font-weight: 600;
   color: #333;
+  margin-bottom: 5px;
 }
 
-.asset-desc {
+.resource-desc {
   font-size: 12px;
   color: #666;
-  margin-top: 5px;
 }
 
-.asset-btn {
+.resource-btn {
   color: #409EFF;
-}
-
-/* 中部内容区：个人信息与设置 */
-.middle-content {
-  margin-bottom: 30px;
-}
-
-.info-card {
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.profile-info {
-  display: flex;
-  gap: 40px;
-  padding: 20px;
-}
-
-.avatar-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.avatar {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.info-form {
-  flex: 1;
-}
-
-/* 底部内容区：学习记录与系统消息 */
-.bottom-content {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 30px;
-}
-
-.bottom-left {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.bottom-right {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.record-card,
-.message-card,
-.security-card {
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-/* 学习记录 */
-.learning-records {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.record-item {
-  display: flex;
-  gap: 20px;
-  padding: 15px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.record-item:hover {
-  background-color: #f0f0f0;
-}
-
-.record-time {
-  width: 80px;
-  font-size: 14px;
-  color: #999;
-  font-weight: 500;
-}
-
-.record-content {
-  flex: 1;
-}
-
-.record-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-}
-
-.record-desc {
   font-size: 12px;
-  color: #666;
-  margin-top: 5px;
-}
-
-/* 消息中心 */
-.messages {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.message-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 15px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.message-item:hover {
-  background-color: #f0f0f0;
-}
-
-.message-item.unread {
-  background-color: #e6f7ff;
-  border-left: 4px solid #409EFF;
-}
-
-.message-content {
-  flex: 1;
-  margin-right: 15px;
-}
-
-.message-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-}
-
-.message-desc {
-  font-size: 12px;
-  color: #666;
-  margin-top: 5px;
-}
-
-.message-time {
-  font-size: 12px;
-  color: #999;
-  white-space: nowrap;
 }
 
 /* 安全设置 */
@@ -1193,7 +1330,7 @@ const handleLogout = () => {
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 20px;
 }
 
 .security-item {
@@ -1203,11 +1340,6 @@ const handleLogout = () => {
   padding: 15px;
   background-color: #f9f9f9;
   border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.security-item:hover {
-  background-color: #f0f0f0;
 }
 
 .security-label {
@@ -1216,9 +1348,9 @@ const handleLogout = () => {
   font-weight: 500;
 }
 
-.third-party {
+.third-party-bindings {
   display: flex;
-  gap: 10px;
+  gap: 15px;
 }
 
 .third-party-btn {
@@ -1227,47 +1359,32 @@ const handleLogout = () => {
 
 /* 响应式设计 */
 @media screen and (max-width: 1024px) {
-  .main-content {
+  .stats-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .main-content-grid {
     grid-template-columns: 1fr;
   }
   
-  .bottom-content {
-    grid-template-columns: 1fr;
-  }
-  
-  .profile-header {
+  .welcome-section {
     flex-direction: column;
     align-items: flex-start;
     gap: 15px;
   }
   
-  .header-right {
+  .header-actions {
     align-self: flex-end;
   }
 }
 
 @media screen and (max-width: 768px) {
-  .profile-info {
-    flex-direction: column;
-    align-items: center;
+  .stats-cards {
+    grid-template-columns: 1fr;
   }
   
-  .info-form {
-    width: 100%;
-  }
-  
-  .time-stats {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .time-item {
-    text-align: left;
-  }
-  
-  .radar-legend {
-    flex-direction: column;
-    gap: 10px;
+  .welcome-section {
+    padding: 0 10px;
   }
   
   .record-item {
@@ -1276,7 +1393,7 @@ const handleLogout = () => {
   }
   
   .record-time {
-    width: 100%;
+    align-self: flex-start;
   }
   
   .message-item {
@@ -1286,6 +1403,36 @@ const handleLogout = () => {
   
   .message-time {
     align-self: flex-start;
+  }
+  
+  .action-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .action-btn {
+    align-self: flex-end;
+  }
+  
+  .resource-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .resource-btn {
+    align-self: flex-end;
+  }
+  
+  .security-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .third-party-bindings {
+    align-self: flex-end;
   }
 }
 </style>
