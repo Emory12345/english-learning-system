@@ -8,6 +8,9 @@ interface UserState {
     id: string
     name: string
     email: string
+    avatar?: string
+    phone?: string
+    bio?: string
   }
 }
 
@@ -48,18 +51,21 @@ export const useUserStore = defineStore('user', {
     },
     // 登录
     login(role: 'student' | 'teacher' | 'admin', userInfo: {
-      id: string
-      name: string
-      email: string
-    }, token: string) {
-      this.isLoggedIn = true
-      this.role = role
-      this.token = token
-      this.userInfo = userInfo
-      // 保存到localStorage
-      localStorage.setItem('token', token)
-      localStorage.setItem('role', role)
-      localStorage.setItem('userInfo', JSON.stringify(userInfo))
+        id: string
+        name: string
+        email: string
+        avatar?: string
+        phone?: string
+        bio?: string
+      }, token: string) {
+        this.isLoggedIn = true
+        this.role = role
+        this.token = token
+        this.userInfo = userInfo
+        // 保存到localStorage
+        localStorage.setItem('token', token)
+        localStorage.setItem('role', role)
+        localStorage.setItem('userInfo', JSON.stringify(userInfo))
     },
     // 登出
     logout() {

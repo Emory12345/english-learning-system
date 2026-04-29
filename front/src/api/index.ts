@@ -87,16 +87,30 @@ export const api = {
   // 课程相关
   courses: {
     getList: () => request<any[]>('/course/list'),
-    getDetail: (id: string) => request<any>(`/course/${id}`),
-    create: (data: any) => request<any>('/course', {
+    getDetail: (id: string) => request<any>(`/api/courses/${id}`),
+    getAll: (params?: Record<string, any>) => request<any>('/api/courses', {
+      method: 'GET',
+      params: params,
+    }),
+    create: (data: any) => request<any>('/api/courses', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-    update: (id: string, data: any) => request<any>(`/course/${id}`, {
+    update: (id: string, data: any) => request<any>(`/api/courses/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
-    delete: (id: string) => request<{ message: string }>(`/course/${id}`, {
+    delete: (id: string) => request<{ message: string }>(`/api/courses/${id}`, {
+      method: 'DELETE',
+    }),
+    submit: (id: string) => request<any>(`/api/courses/${id}/submit`, {
+      method: 'PUT',
+    }),
+    addChapter: (courseId: number, data: any) => request<any>(`/api/courses/${courseId}/chapters`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    removeChapter: (courseId: number, chapterId: number) => request<any>(`/api/courses/${courseId}/chapters/${chapterId}`, {
       method: 'DELETE',
     }),
     enroll: (id: string) => request<any>(`/course/enroll/${id}`, {
@@ -106,7 +120,10 @@ export const api = {
       method: 'POST',
     }),
     getEnrolled: () => request<any[]>('/course/enrolled'),
-    getTeacherCourses: () => request<any[]>('/course/teacher'),
+    getTeacherCourses: () => request<any>('/api/courses', {
+      method: 'GET',
+      params: { status: 0 },
+    }),
   },
 
   // 作业相关
@@ -130,7 +147,7 @@ export const api = {
     }),
     getSubmissions: (homeworkId: string) => request<any[]>(`/homework/submissions/${homeworkId}`),
     getTeacherHomework: () => request<any[]>('/homework/teacher'),
-    getTeacherSubmissions: () => request<any[]>('/homework/submissions/teacher'),
+    getTeacherSubmissions: () => request<any[]>('/api/homework/teacher/list'),
     editHomework: (id: string, data: any) => request<any>(`/homework/edit/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -156,12 +173,16 @@ export const api = {
   
   // 管理员相关
   admin: {
-    getPendingCourses: () => request<any[]>('/admin/courses/pending'),
-    auditCourse: (data: { courseId: string; status: string }) => request<any>('/admin/courses/audit', {
-      method: 'POST',
-      body: JSON.stringify(data),
+    getPendingCourses: () => request<any>('/api/admin/courses', {
+      method: 'GET',
+      params: { status: 1 },
     }),
-    deleteCourse: (id: string) => request<{ message: string }>(`/admin/courses/${id}`, {
+    getCourseDetail: (id: string) => request<any>(`/api/admin/courses/${id}`),
+    auditCourse: (id: string, status: number) => request<any>(`/api/admin/courses/${id}/audit`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    }),
+    deleteCourse: (id: string) => request<{ message: string }>(`/api/admin/courses/${id}`, {
       method: 'DELETE',
     }),
     getPendingVideos: () => request<any[]>('/admin/videos/pending'),
@@ -199,35 +220,103 @@ export const api = {
 
   // 社区相关
   community: {
-    getPosts: () => request<any[]>('/community/posts', {
+    getPosts: (params?: { type?: string; courseId?: number; page?: number; size?: number; featured?: boolean; myPosts?: boolean; repliedToMe?: boolean; following?: boolean }) => request<any>('/api/community/posts', {
       method: 'GET',
+      params: params,
     }),
-    getPostById: (postId: string) => request<any>(`/community/posts/${postId}`),
-    createPost: (title: string, content: string, category: string, extras?: { imageUrls?: string; videoUrl?: string; documentUrls?: string; location?: string }) => request<any>('/community/posts', {
+    getPostById: (postId: string) => request<any>(`/api/community/posts/${postId}`),
+    createPost: (data: any) => request<any>('/api/community/posts', {
       method: 'POST',
-      body: JSON.stringify({ title, content, category, ...extras }),
+      body: JSON.stringify(data),
     }),
-    deletePost: (postId: string) => request<{ message: string }>(`/community/posts/${postId}`, {
+    updatePost: (postId: string, data: any) => request<any>(`/api/community/posts/${postId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+    deletePost: (postId: string) => request<{ message: string }>(`/api/community/posts/${postId}`, {
       method: 'DELETE',
     }),
-    toggleTopPost: (postId: string, top: boolean) => request<{ message: string }>(`/community/posts/${postId}/top`, {
+    toggleTop: (postId: string, top: boolean) => request<{ message: string }>(`/api/community/posts/${postId}/top`, {
       method: 'PUT',
       body: JSON.stringify({ top }),
     }),
-    getComments: (postId: string) => request<any[]>(`/community/posts/${postId}/comments`),
-    createComment: (postId: string, content: string, parentId?: string) => request<any>(`/community/posts/${postId}/comments`, {
-      method: 'POST',
-      body: JSON.stringify({ content, parentId }),
+    toggleFeatured: (postId: string, featured: boolean) => request<{ message: string }>(`/api/community/posts/${postId}/featured`, {
+      method: 'PUT',
+      body: JSON.stringify({ featured }),
     }),
-    likePost: (postId: string) => request<any>(`/community/posts/${postId}/like`, {
+    getComments: (postId: string) => request<any[]>(`/api/community/posts/${postId}/comments`),
+    createComment: (postId: string, data: { content: string; parentId?: string }) => request<any>(`/api/community/posts/${postId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    toggleLike: (postId: string) => request<{ liked: boolean; likeCount: number }>(`/api/community/posts/${postId}/like`, {
       method: 'POST',
     }),
-    collectPost: (postId: string) => request<any>(`/community/posts/${postId}/collect`, {
+    toggleCollect: (postId: string) => request<{ collected: boolean; collectCount: number }>(`/api/community/posts/${postId}/collect`, {
       method: 'POST',
     }),
-    checkInteraction: (postId: string, type: string) => request<boolean>(`/community/posts/${postId}/interactions/check`, {
+    checkInteraction: (postId: string) => request<{ liked: boolean; collected: boolean }>(`/api/community/posts/${postId}/interactions/check`, {
       method: 'GET',
-      params: { type },
+    }),
+    reportPost: (postId: string, data: { reason: string }) => request<{ message: string }>(`/api/community/posts/${postId}/report`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    getHotTopics: () => request<any[]>('/api/community/hot-topics'),
+    getHotTags: () => request<any[]>('/api/community/hot-tags'),
+    getActiveUsers: () => request<any[]>('/api/community/active-users'),
+    getReports: (params?: { page?: number; size?: number; status?: string }) => request<any>('/api/community/admin/reports', {
+      method: 'GET',
+      params: params,
+    }),
+    getReportCount: () => request<any>('/api/community/admin/reports/count'),
+    handleReport: (reportId: string, data: { action: string }) => request<{ message: string }>(`/api/community/admin/reports/${reportId}/handle`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+    getBannedUsers: (params?: { page?: number; size?: number }) => request<any>('/api/community/admin/banned-users', {
+      method: 'GET',
+      params: params,
+    }),
+    banUser: (userId: string, data: { reason: string; days?: number; permanent?: boolean }) => request<any>(`/api/community/admin/ban/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    unbanUser: (userId: string) => request<any>(`/api/community/admin/ban/${userId}`, {
+      method: 'DELETE',
+    }),
+    extendBan: (userId: string, days: number) => request<any>(`/api/community/admin/ban/${userId}/extend`, {
+      method: 'POST',
+      body: JSON.stringify({ days }),
+    }),
+    getReviewItems: (params?: { page?: number; size?: number }) => request<any>('/api/community/admin/review', {
+      method: 'GET',
+      params: params,
+    }),
+    reviewItem: (id: string, action: string) => request<any>(`/api/community/admin/review/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ action }),
+    }),
+    updatePostTop: (postId: number, top: boolean) => request<any>(`/api/community/admin/posts/${postId}/top`, {
+      method: 'PUT',
+      body: JSON.stringify({ top }),
+    }),
+    updatePostEssence: (postId: number, essence: boolean) => request<any>(`/api/community/admin/posts/${postId}/essence`, {
+      method: 'PUT',
+      body: JSON.stringify({ essence }),
+    }),
+    getMyPosts: () => request<any[]>('/api/community/user/my-posts'),
+    followUser: (userId: string) => request<{ message: string }>('/api/community/follow', {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    }),
+    unfollowUser: (userId: string) => request<{ message: string }>(`/api/community/follow/${userId}`, {
+      method: 'DELETE',
+    }),
+    getFollowingPosts: () => request<any[]>('/api/community/posts/following'),
+    getFollowings: () => request<any[]>('/api/community/user/followings'),
+    checkFollowing: (userId: string) => request<{ followed: boolean }>(`/api/community/follow/check/${userId}`, {
+      method: 'GET',
     }),
   },
 
@@ -380,12 +469,68 @@ export const api = {
         body: JSON.stringify(data),
       }),
     getMySubmissions: () => request<any>('/api/cet4-homework/my-submissions'),
-    getTeacherSubmissions: () => request<any>('/api/cet4-homework/teacher/submissions'),
+    getTeacherSubmissions: () => request<any>('/api/homework/teacher/list'),
     grade: (data: { submissionId: number; score: number; feedback?: string }) => request<any>('/api/cet4-homework/grade', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
     checkSubmitted: (homeworkId: number) => request<any>(`/api/cet4-homework/check-submitted/${homeworkId}`),
     getAnswer: (homeworkId: number) => request<any>(`/api/cet4-homework/answer/${homeworkId}`),
+  },
+
+  // CET4作业提交新接口
+  cet4HomeworkSubmission: {
+    submit: async (formData: FormData) => {
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/homework/submit`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    },
+    getStatus: (studentId: number, paperTitle: string) =>
+      request<any>(`/api/homework/status?studentId=${studentId}&paperTitle=${encodeURIComponent(paperTitle)}`),
+    getTeacherList: (keyword?: string, page?: number, size?: number) => {
+      const params = new URLSearchParams();
+      if (keyword) params.append('keyword', keyword);
+      if (page !== undefined) params.append('page', String(page));
+      if (size !== undefined) params.append('size', String(size));
+      const queryString = params.toString();
+      return request<any>(`/api/homework/teacher/list${queryString ? '?' + queryString : ''}`);
+    },
+    getTeacherDetail: (submissionId: number) =>
+      request<any>(`/api/homework/teacher/detail/${submissionId}`),
+    grade: (submissionId: number, data: { writingScore: number; translationScore: number; teacherComment: string }) =>
+      request<any>(`/api/homework/teacher/grade/${submissionId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+  },
+
+  // 教师个人中心相关
+  teacherProfile: {
+    getInfo: () => request<any>('/api/teacher/profile/info'),
+    updateInfo: (data: any) => request<any>('/api/teacher/profile/info', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+    changePassword: (data: { oldPassword: string; newPassword: string; confirmPassword: string }) => request<any>('/api/teacher/profile/password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    getStats: () => request<any>('/api/teacher/profile/stats'),
+    getCourses: () => request<any[]>('/api/teacher/profile/courses'),
+    getPosts: () => request<any[]>('/api/teacher/profile/posts'),
   },
 };

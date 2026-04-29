@@ -5,104 +5,99 @@
       <!-- 左侧系统名称 -->
       <div class="nav-left">
         <div class="system-logo">
+          <span class="logo-dot"></span>
           <span class="logo-text">在线英语学习系统</span>
         </div>
       </div>
-      
+
+      <!-- 汉堡菜单按钮 -->
+      <div class="hamburger" @click="isMenuOpen = !isMenuOpen">
+        <div class="hamburger-line"></div>
+        <div class="hamburger-line"></div>
+        <div class="hamburger-line"></div>
+      </div>
+
       <!-- 中间导航菜单 -->
-      <nav class="nav-center">
+      <nav class="nav-center" :class="{ 'menu-open': isMenuOpen }">
         <template v-if="userStore.role === 'student'">
-          <a :href="'/student/home'" :class="[ 'nav-item', activeMenu === '/student/home' ? 'nav-item-active' : '' ]">
+          <a :href="'/student/home'" :class="[ 'nav-item', activeMenu === '/student/home' ? 'nav-item-active' : '' ]" @click.prevent="navigate('/student/home')">
             首页
           </a>
-          <a :href="'/student/teenage-english'" :class="[ 'nav-item', activeMenu.includes('/student/teenage-english') ? 'nav-item-active' : '' ]">
+          <a :href="'/student/teenage-english'" :class="[ 'nav-item', activeMenu.includes('/student/teenage-english') ? 'nav-item-active' : '' ]" @click.prevent="navigate('/student/teenage-english')">
             青少年英语
           </a>
-          <a :href="'/student/cet-english'" :class="[ 'nav-item', activeMenu.includes('/student/cet-english') ? 'nav-item-active' : '' ]">
+          <a :href="'/student/cet-english'" :class="[ 'nav-item', activeMenu.includes('/student/cet-english') ? 'nav-item-active' : '' ]" @click.prevent="navigate('/student/cet-english')">
             四六级英语
           </a>
-          <a :href="'/student/kaoyan-english'" :class="[ 'nav-item', activeMenu.includes('/student/kaoyan-english') ? 'nav-item-active' : '' ]">
+          <a :href="'/student/kaoyan-english'" :class="[ 'nav-item', activeMenu.includes('/student/kaoyan-english') ? 'nav-item-active' : '' ]" @click.prevent="navigate('/student/kaoyan-english')">
             考研英语
           </a>
-          <a :href="'/student/ielts-toefl-english'" :class="[ 'nav-item', activeMenu.includes('/student/ielts-toefl-english') ? 'nav-item-active' : '' ]">
+          <a :href="'/student/ielts-toefl-english'" :class="[ 'nav-item', activeMenu.includes('/student/ielts-toefl-english') ? 'nav-item-active' : '' ]" @click.prevent="navigate('/student/ielts-toefl-english')">
             雅思托福
           </a>
-
-          <a :href="'/student/community'" :class="[ 'nav-item', activeMenu === '/student/community' ? 'nav-item-active' : '' ]">
+          <a :href="'/student/community'" :class="[ 'nav-item', activeMenu === '/student/community' ? 'nav-item-active' : '' ]" @click.prevent="navigate('/student/community')">
             学习社区
           </a>
-          <a :href="'/student/profile'" :class="[ 'nav-item', activeMenu === '/student/profile' ? 'nav-item-active' : '' ]">
+          <a :href="'/student/profile'" :class="[ 'nav-item', activeMenu === '/student/profile' ? 'nav-item-active' : '' ]" @click.prevent="navigate('/student/profile')">
             个人中心
           </a>
         </template>
-        
-        <template v-else-if="userStore.role === 'teacher'">
-          <a :href="'/teacher/teenage-english'" :class="[ 'nav-item', activeMenu.includes('/teacher/teenage-english') ? 'nav-item-active' : '' ]">
-            青少年英语
-          </a>
-          <a :href="'/teacher/kaoyan-english'" :class="[ 'nav-item', activeMenu.includes('/teacher/kaoyan-english') ? 'nav-item-active' : '' ]">
-            考研英语
-          </a>
-          <a :href="'/teacher/cet-english'" :class="[ 'nav-item', activeMenu.includes('/teacher/cet-english') ? 'nav-item-active' : '' ]">
-            四六级英语
-          </a>
-          <a :href="'/teacher/ielts-toefl-english'" :class="[ 'nav-item', activeMenu.includes('/teacher/ielts-toefl-english') ? 'nav-item-active' : '' ]">
-            雅思托福
-          </a>
 
-          <a :href="'/teacher/homework-correction'" :class="[ 'nav-item', activeMenu === '/teacher/homework-correction' ? 'nav-item-active' : '' ]">
-            待批改作业
+        <template v-else-if="userStore.role === 'teacher'">
+          <a :href="'/teacher/dashboard'" :class="[ 'nav-item', activeMenu.includes('/teacher/dashboard') ? 'nav-item-active' : '' ]" @click.prevent="navigate('/teacher/dashboard')">
+            首页
           </a>
-          <a :href="'/teacher/homework-management'" :class="[ 'nav-item', activeMenu === '/teacher/homework-management' ? 'nav-item-active' : '' ]">
+          <a :href="'/teacher/teenage-english'" :class="[ 'nav-item', activeMenu.includes('/teacher/teenage-english') ? 'nav-item-active' : '' ]" @click.prevent="navigate('/teacher/teenage-english')">
+            课程管理
+          </a>
+          <a :href="'/teacher/homework-correction'" :class="[ 'nav-item', activeMenu === '/teacher/homework-correction' ? 'nav-item-active' : '' ]" @click.prevent="navigate('/teacher/homework-correction')">
             作业管理
           </a>
-          <a :href="'/teacher/community'" :class="[ 'nav-item', activeMenu === '/teacher/community' ? 'nav-item-active' : '' ]">
+          <a :href="'/teacher/community'" :class="[ 'nav-item', activeMenu === '/teacher/community' ? 'nav-item-active' : '' ]" @click.prevent="navigate('/teacher/community')">
             学习社区
           </a>
-          <a :href="'/teacher/profile'" :class="[ 'nav-item', activeMenu === '/teacher/profile' ? 'nav-item-active' : '' ]">
+          <a :href="'/teacher/profile'" :class="[ 'nav-item', activeMenu === '/teacher/profile' ? 'nav-item-active' : '' ]" @click.prevent="navigate('/teacher/profile')">
             个人中心
           </a>
         </template>
-        
+
         <template v-else-if="userStore.role === 'admin'">
-          <a :href="'/admin/data-statistics'" :class="[ 'nav-item', activeMenu === '/admin/data-statistics' ? 'nav-item-active' : '' ]">
-            数据统计
+          <a :href="'/admin/home'" :class="[ 'nav-item', activeMenu === '/admin/home' ? 'nav-item-active' : '' ]" @click.prevent="navigate('/admin/home')">
+            首页
           </a>
-          <a :href="'/admin/home'" :class="[ 'nav-item', activeMenu === '/admin/home' ? 'nav-item-active' : '' ]">
-            教师审核
-          </a>
-          <a :href="'/admin/user-management'" :class="[ 'nav-item', activeMenu === '/admin/user-management' ? 'nav-item-active' : '' ]">
+          <a :href="'/admin/user-management'" :class="[ 'nav-item', activeMenu === '/admin/user-management' ? 'nav-item-active' : '' ]" @click.prevent="navigate('/admin/user-management')">
             用户管理
           </a>
-          <a :href="'/admin/video-audit'" :class="[ 'nav-item', activeMenu === '/admin/video-audit' ? 'nav-item-active' : '' ]">
+          <a :href="'/admin/video-audit'" :class="[ 'nav-item', activeMenu === '/admin/video-audit' ? 'nav-item-active' : '' ]" @click.prevent="navigate('/admin/video-audit')">
             课程审核
           </a>
-          <a :href="'/admin/community'" :class="[ 'nav-item', activeMenu === '/admin/community' ? 'nav-item-active' : '' ]">
+          <a :href="'/admin/community'" :class="[ 'nav-item', activeMenu === '/admin/community' ? 'nav-item-active' : '' ]" @click.prevent="navigate('/admin/community')">
             学习社区
           </a>
         </template>
       </nav>
-      
+
       <!-- 右侧用户信息 -->
       <div class="nav-right">
-        <el-dropdown v-if="userStore.isLoggedIn" trigger="click" class="user-dropdown">
-          <div class="user-info">
+        <div v-if="userStore.isLoggedIn" class="user-dropdown-wrapper">
+          <div class="user-info" @click="isDropdownOpen = !isDropdownOpen">
             <span class="user-name">{{ userStore.userInfo.name || '用户' }}</span>
-            <el-avatar size="small" :src="userAvatar || defaultAvatar" />
+            <div class="user-avatar">
+              <img :src="userAvatar || defaultAvatar" alt="avatar">
+            </div>
+            <span class="dropdown-arrow">▼</span>
           </div>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item @click="handleLogout">退出登录</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-        <el-button v-else type="primary" size="small" @click="router.push('/login')" class="login-button">
-          登录
-        </el-button>
+          <div class="dropdown-menu" v-if="isDropdownOpen">
+            <div class="dropdown-item" @click="handleLogout">退出登录</div>
+          </div>
+        </div>
+        <div v-else class="login-button-wrapper">
+          <button class="login-button" @click="router.push('/login')">
+            登录
+          </button>
+        </div>
       </div>
     </header>
-    
-
 
     <!-- 内容区 -->
     <main class="content">
@@ -112,26 +107,27 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, watch, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
-import { HomeFilled, Reading, School, Document, Flag, Briefcase, ChatDotRound, List, User, Check, Notebook, DataAnalysis, UserFilled, VideoCamera, Search, ArrowDown } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const router = useRouter()
 const defaultAvatar = 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=default%20user%20avatar&image_size=square'
+const isMenuOpen = ref(false)
+const isDropdownOpen = ref(false)
 
 // 计算用户头像URL
 const userAvatar = computed(() => {
   if (!userStore.userInfo || !userStore.userInfo.avatar) {
     return ''
   }
-  
+
   const avatar = userStore.userInfo.avatar
   if (avatar.startsWith('http')) {
     return avatar
   }
-  
+
   // 处理相对路径的头像URL
   const API_BASE_URL = 'http://localhost:8080'
   return `${API_BASE_URL}${avatar}`
@@ -156,66 +152,38 @@ const activeMenu = computed(() => {
   return router.currentRoute.value.path
 })
 
-// 获取角色文本
-const getRoleText = (role: string | undefined) => {
-  switch (role) {
-    case 'student': return '学生'
-    case 'teacher': return '教师'
-    case 'admin': return '管理员'
-    default: return '用户'
-  }
-}
-
-// 获取页面标题
-const getPageTitle = () => {
-  const path = router.currentRoute.value.path
-  if (path.includes('/student/home')) return '首页'
-  if (path.includes('/student/teenage-english')) return '青少年英语'
-  if (path.includes('/student/kaoyan-english')) return '考研英语'
-  if (path.includes('/student/cet-english')) return '四六级英语'
-  if (path.includes('/student/ielts-toefl-english')) return '雅思托福'
-
-  if (path.includes('/student/community')) return '学习社区'
-  if (path.includes('/student/profile')) return '个人中心'
-  if (path.includes('/teacher/')) return '教师工作台'
-  if (path.includes('/admin/')) return '管理后台'
-  return '在线英语学习系统'
+// 导航方法
+const navigate = (path: string) => {
+  router.push(path)
+  isMenuOpen.value = false
 }
 
 // 退出登录
 const handleLogout = () => {
   userStore.logout()
+  isDropdownOpen.value = false
   router.push('/login')
 }
+
+// 点击外部关闭下拉菜单
+onMounted(() => {
+  document.addEventListener('click', (e) => {
+    const dropdown = document.querySelector('.user-dropdown-wrapper')
+    if (dropdown && !dropdown.contains(e.target as Node)) {
+      return
+    }
+    isDropdownOpen.value = false
+  })
+})
 </script>
 
 <style scoped>
-/* 全局样式变量 */
-:root {
-  --primary-color: #165DFF;
-  --primary-light: #4080FF;
-  --primary-dark: #0E42B2;
-  --text-color: #333333;
-  --text-light: #666666;
-  --text-lighter: #999999;
-  --background-color: #F5F7FA;
-  --card-background: #FFFFFF;
-  --border-color: #E5E7EB;
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
-  --border-radius-sm: 4px;
-  --border-radius-md: 8px;
-  --border-radius-lg: 12px;
-  --transition: all 0.3s ease;
-  --banner-color: #60A5FA;
-}
-
 .layout-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   font-family: 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
-  background-color: var(--background-color);
+  background-color: #f5f7fa;
 }
 
 /* 顶部导航栏 */
@@ -223,33 +191,31 @@ const handleLogout = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
-  height: 60px;
-  background-color: #333333;
+  padding: 0 24px;
+  height: 50px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  box-shadow: var(--shadow-md);
   position: relative;
   z-index: 100;
-  overflow-x: auto;
-  white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-.top-nav::-webkit-scrollbar {
-  height: 4px;
+/* 汉堡菜单 */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  cursor: pointer;
+  padding: 6px;
 }
 
-.top-nav::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
-}
-
-.top-nav::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 2px;
-}
-
-.top-nav::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+.hamburger-line {
+  width: 20px;
+  height: 2px;
+  background-color: rgba(255, 255, 255, 0.9);
+  margin: 2px 0;
+  transition: all 0.3s ease;
 }
 
 /* 左侧系统名称 */
@@ -261,64 +227,71 @@ const handleLogout = () => {
 .system-logo {
   display: flex;
   align-items: center;
+  gap: 10px;
+}
+
+.logo-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: white;
+  flex-shrink: 0;
 }
 
 .logo-text {
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
   color: white;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 /* 中间导航菜单 */
 .nav-center {
   display: flex;
   align-items: center;
-  gap: 30px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
 .nav-item {
-  color: white;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
-  padding: 8px 0;
+  padding: 6px 14px;
+  border-radius: 20px;
   position: relative;
-  transition: var(--transition);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.nav-arrow {
+  font-size: 10px;
+  color: inherit;
 }
 
 .nav-item:hover {
-  color: #CCCCCC;
+  color: #ffffff;
+  transform: scale(1.02);
 }
 
 .nav-item-active {
-  color: var(--banner-color);
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.2);
   font-weight: 600;
-}
-
-.nav-item-active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background-color: var(--banner-color);
-  border-radius: 1px;
 }
 
 /* 右侧用户信息 */
 .nav-right {
   display: flex;
   align-items: center;
-  gap: 20px;
 }
 
-/* 用户信息 */
-.user-dropdown {
-  display: flex;
-  align-items: center;
+.user-dropdown-wrapper {
+  position: relative;
 }
 
 .user-info {
@@ -327,12 +300,12 @@ const handleLogout = () => {
   gap: 8px;
   cursor: pointer;
   padding: 6px 12px;
-  border-radius: var(--border-radius-md);
-  transition: var(--transition);
+  border-radius: 20px;
+  transition: all 0.3s ease;
 }
 
 .user-info:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
 .user-name {
@@ -340,87 +313,133 @@ const handleLogout = () => {
   font-weight: 500;
   color: white;
   white-space: nowrap;
+}
+
+.user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 120px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  flex-shrink: 0;
+}
+
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dropdown-arrow {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.85);
+  transition: all 0.3s ease;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+  min-width: 120px;
+  overflow: hidden;
+}
+
+.dropdown-item {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: #f0f4ff;
+  color: #667eea;
 }
 
 /* 登录按钮 */
 .login-button {
-  background-color: var(--banner-color);
-  border-color: var(--banner-color);
-  color: white;
+  background-color: white;
+  border: none;
+  color: #667eea;
   font-size: 14px;
-  padding: 6px 16px;
-  border-radius: var(--border-radius-md);
-  transition: var(--transition);
+  font-weight: 600;
+  padding: 6px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2);
 }
 
 .login-button:hover {
-  background-color: #3B82F6;
-  border-color: #3B82F6;
-  color: white;
+  background-color: #f0f4ff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
 }
-
-
-
-
-
-
 
 /* 内容区 */
 .content {
   flex: 1;
-  padding: 0 30px 30px;
+  padding: 30px;
   overflow-y: auto;
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+  background-color: transparent;
 }
 
 /* 响应式设计 */
 @media screen and (max-width: 1024px) {
-  .top-nav {
-    padding: 0 20px;
-  }
-  
   .nav-center {
-    gap: 20px;
+    gap: 4px;
   }
-  
 
-  
-  .content {
-    padding: 0 20px 20px;
+  .nav-item {
+    padding: 6px 12px;
   }
 }
 
 @media screen and (max-width: 768px) {
   .top-nav {
-    height: auto;
-    padding: 12px 16px;
-    flex-wrap: wrap;
-    gap: 12px;
+    padding: 0 16px;
+    height: 50px;
   }
-  
-  .nav-center {
-    order: 3;
-    width: 100%;
-    justify-content: center;
-    gap: 16px;
-  }
-  
-  .nav-right {
-    gap: 12px;
-  }
-  
 
-  
+  .hamburger {
+    display: flex;
+  }
+
+  .nav-center {
+    position: absolute;
+    top: 50px;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 16px;
+    gap: 8px;
+    display: none;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .nav-center.menu-open {
+    display: flex;
+  }
+
+  .nav-item {
+    width: 100%;
+    padding: 10px 16px;
+    border-radius: 8px;
+  }
+
   .content {
     padding: 0 15px 15px;
   }
 }
-
-
-
 </style>

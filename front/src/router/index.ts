@@ -33,6 +33,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/student/CourseSelection.vue')
       },
       {
+        path: 'course-detail/:id',
+        name: 'CourseDetail',
+        component: () => import('../views/student/CourseDetail.vue')
+      },
+      {
         path: 'video-player/:courseId',
         name: 'VideoPlayer',
         component: () => import('../views/student/VideoPlayer.vue')
@@ -45,7 +50,12 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'community',
         name: 'Community',
-        component: () => import('../views/student/Community.vue')
+        component: () => import('../views/Community.vue')
+      },
+      {
+        path: 'community/post/:id',
+        name: 'PostDetail',
+        component: () => import('../views/PostDetail.vue')
       },
       {
         path: 'profile',
@@ -109,6 +119,26 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/student/KaoyanWords.vue')
       },
       {
+        path: 'graduate/reading',
+        name: 'GraduateReading',
+        component: () => import('../views/student/GraduateReading.vue')
+      },
+      {
+        path: 'graduate/translation',
+        name: 'GraduateTranslation',
+        component: () => import('../views/student/graduate/GraduateTranslation.vue')
+      },
+      {
+        path: 'graduate/writing',
+        name: 'GraduateWriting',
+        component: () => import('../views/student/graduate/GraduateWriting.vue')
+      },
+      {  
+        path: 'graduate/exam',
+        name: 'GraduateExam',
+        component: () => import('../views/student/GraduateExam.vue')
+      },
+      {
         path: 'ielts-toefl-english',
         name: 'IELTS_ToeflEnglish',
         component: () => import('../views/student/IELTS_ToeflEnglish.vue')
@@ -117,6 +147,16 @@ const routes: RouteRecordRaw[] = [
         path: 'business-english',
         name: 'BusinessEnglish',
         component: () => import('../views/student/BusinessEnglish.vue')
+      },
+      {
+        path: 'teenage-english',
+        name: 'TeenEnglish',
+        component: () => import('../views/student/TeenEnglish.vue')
+      },
+      {
+        path: 'course/:id',
+        name: 'CourseDetail',
+        component: () => import('../views/student/CourseDetail.vue')
       }
     ]
   },
@@ -126,8 +166,13 @@ const routes: RouteRecordRaw[] = [
     name: 'TeacherLayout',
     component: () => import('../components/Layout.vue'),
     meta: { requiresAuth: true, roles: ['teacher'] },
-    redirect: '/teacher/teenage-english',
+    redirect: '/teacher/dashboard',
     children: [
+      {
+        path: 'dashboard',
+        name: 'TeacherDashboard',
+        component: () => import('../views/teacher/Dashboard.vue')
+      },
       {
         path: 'teenage-english',
         name: 'TeacherTeenageEnglish',
@@ -163,15 +208,16 @@ const routes: RouteRecordRaw[] = [
         name: 'TeacherProfile',
         component: () => import('../views/teacher/Profile.vue')
       },
-      {
-        path: 'homework-management',
-        name: 'HomeworkManagement',
-        component: () => import('../views/teacher/HomeworkManagement.vue')
-      },
+
       {
         path: 'community',
         name: 'TeacherCommunity',
-        component: () => import('../views/teacher/Community.vue')
+        component: () => import('../views/Community.vue')
+      },
+      {
+        path: 'community/post/:id',
+        name: 'TeacherPostDetail',
+        component: () => import('../views/PostDetail.vue')
       }
     ]
   },
@@ -181,7 +227,7 @@ const routes: RouteRecordRaw[] = [
     name: 'AdminLayout',
     component: () => import('../components/Layout.vue'),
     meta: { requiresAuth: true, roles: ['admin'] },
-    redirect: '/admin/data-statistics',
+    redirect: '/admin/home',
     children: [
       {
         path: 'home',
@@ -204,11 +250,6 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/admin/VideoAudit.vue')
       },
       {
-        path: 'data-statistics',
-        name: 'DataStatistics',
-        component: () => import('../views/admin/DataStatistics.vue')
-      },
-      {
         path: 'system-settings',
         name: 'SystemSettings',
         component: () => import('../views/admin/SystemSettings.vue')
@@ -217,6 +258,26 @@ const routes: RouteRecordRaw[] = [
         path: 'community',
         name: 'AdminCommunity',
         component: () => import('../views/admin/Community.vue')
+      },
+      {
+        path: 'community/reports',
+        name: 'ReportCenter',
+        component: () => import('../views/admin/ReportCenter.vue')
+      },
+      {
+        path: 'community/ban-users',
+        name: 'BanUsers',
+        component: () => import('../views/admin/BanUsers.vue')
+      },
+      {
+        path: 'community/review',
+        name: 'ContentReview',
+        component: () => import('../views/admin/ContentReview.vue')
+      },
+      {
+        path: 'community/stats',
+        name: 'CommunityStats',
+        component: () => import('../views/admin/CommunityStats.vue')
       }
     ]
   },
@@ -243,6 +304,12 @@ router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
   const requiresAuth = to.meta.requiresAuth
   const roles = to.meta.roles as string[]
+
+  // 暂时允许未登录用户访问CET4RealTests和GraduateExam页面
+  if (to.name === 'CET4RealTests' || to.name === 'GraduateExam') {
+    next()
+    return
+  }
 
   // 如果用户已经登录并且有角色
   if (userStore.isLoggedIn && userStore.role) {
