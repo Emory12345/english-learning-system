@@ -33,7 +33,7 @@
             考研英语
           </a>
           <a :href="'/student/ielts-toefl-english'" :class="[ 'nav-item', activeMenu.includes('/student/ielts-toefl-english') ? 'nav-item-active' : '' ]" @click.prevent="navigate('/student/ielts-toefl-english')">
-            雅思托福
+            雅思
           </a>
           <a :href="'/student/community'" :class="[ 'nav-item', activeMenu === '/student/community' ? 'nav-item-active' : '' ]" @click.prevent="navigate('/student/community')">
             学习社区
@@ -170,9 +170,8 @@ onMounted(() => {
   document.addEventListener('click', (e) => {
     const dropdown = document.querySelector('.user-dropdown-wrapper')
     if (dropdown && !dropdown.contains(e.target as Node)) {
-      return
+      isDropdownOpen.value = false
     }
-    isDropdownOpen.value = false
   })
 })
 </script>
